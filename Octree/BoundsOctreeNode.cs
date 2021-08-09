@@ -5,6 +5,9 @@
 //     Copyright (c) 2017, Máté Cserép, http://codenet.hu
 //     All rights reserved.
 // </copyright>
+
+using System.Numerics;
+
 namespace Octree
 {
     using System.Collections.Generic;
@@ -25,7 +28,7 @@ namespace Octree
             /// <summary>
             /// Centre of this node
             /// </summary>
-            public Point Center { get; private set; }
+            public Vector3 Center { get; private set; }
 
             /// <summary>
             /// Length of this node if it has a looseness of 1.0
@@ -114,7 +117,7 @@ namespace Octree
             /// <param name="minSizeVal">Minimum size of nodes in this octree.</param>
             /// <param name="loosenessVal">Multiplier for baseLengthVal to get the actual size.</param>
             /// <param name="centerVal">Centre position of this node.</param>
-            public Node(float baseLengthVal, float minSizeVal, float loosenessVal, Point centerVal)
+            public Node(float baseLengthVal, float minSizeVal, float loosenessVal, Vector3 centerVal)
             {
                 SetValues(baseLengthVal, minSizeVal, loosenessVal, centerVal);
             }
@@ -334,6 +337,34 @@ namespace Octree
                     }
                 }
             }
+            
+            public void GetCollidingNew(ref Ray checkRay, List<T> result, float maxDistance = float.PositiveInfinity)
+            {
+                float distance;
+                // Is the input ray at least partially in this node?
+                if (!_bounds.IntersectRayNew(checkRay, out distance) || distance > maxDistance)
+                {
+                    return;
+                }
+
+                // Check against any objects in this node
+                for (int i = 0; i < _objects.Count; i++)
+                {
+                    if (_objects[i].Bounds.IntersectRayNew(checkRay, out distance) && distance <= maxDistance)
+                    {
+                        result.Add(_objects[i].Obj);
+                    }
+                }
+
+                // Check children
+                if (_children != null)
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        _children[i].GetCollidingNew(ref checkRay, result, maxDistance);
+                    }
+                }
+            }
 
             /// <summary>
             /// Set the 8 children of this octree.
@@ -444,7 +475,7 @@ namespace Octree
             /// </summary>
             /// <param name="objBoundsCenter">The object's bounds center.</param>
             /// <returns>One of the eight child octants.</returns>
-            public int BestFitChild(Point objBoundsCenter)
+            public int BestFitChild(Vector3 objBoundsCenter)
             {
                 return (objBoundsCenter.X <= Center.X ? 0 : 1)
                        + (objBoundsCenter.Y >= Center.Y ? 0 : 4)
@@ -479,7 +510,7 @@ namespace Octree
             /// <param name="minSizeVal">Minimum size of nodes in this octree.</param>
             /// <param name="loosenessVal">Multiplier for baseLengthVal to get the actual size.</param>
             /// <param name="centerVal">Center position of this node.</param>
-            private void SetValues(float baseLengthVal, float minSizeVal, float loosenessVal, Point centerVal)
+            private void SetValues(float baseLengthVal, float minSizeVal, float loosenessVal, Vector3 centerVal)
             {
                 BaseLength = baseLengthVal;
                 _minSize = minSizeVal;
@@ -488,21 +519,21 @@ namespace Octree
                 _adjLength = _looseness * baseLengthVal;
 
                 // Create the bounding box.
-                Point size = new Point(_adjLength, _adjLength, _adjLength);
+                Vector3 size = new Vector3(_adjLength, _adjLength, _adjLength);
                 _bounds = new BoundingBox(Center, size);
 
                 float quarter = BaseLength / 4f;
                 float childActualLength = (BaseLength / 2) * _looseness;
-                Point childActualSize = new Point(childActualLength, childActualLength, childActualLength);
+                Vector3 childActualSize = new Vector3(childActualLength, childActualLength, childActualLength);
                 _childBounds = new BoundingBox[8];
-                _childBounds[0] = new BoundingBox(Center + new Point(-quarter, quarter, -quarter), childActualSize);
-                _childBounds[1] = new BoundingBox(Center + new Point(quarter, quarter, -quarter), childActualSize);
-                _childBounds[2] = new BoundingBox(Center + new Point(-quarter, quarter, quarter), childActualSize);
-                _childBounds[3] = new BoundingBox(Center + new Point(quarter, quarter, quarter), childActualSize);
-                _childBounds[4] = new BoundingBox(Center + new Point(-quarter, -quarter, -quarter), childActualSize);
-                _childBounds[5] = new BoundingBox(Center + new Point(quarter, -quarter, -quarter), childActualSize);
-                _childBounds[6] = new BoundingBox(Center + new Point(-quarter, -quarter, quarter), childActualSize);
-                _childBounds[7] = new BoundingBox(Center + new Point(quarter, -quarter, quarter), childActualSize);
+                _childBounds[0] = new BoundingBox(Center + new Vector3(-quarter, quarter, -quarter), childActualSize);
+                _childBounds[1] = new BoundingBox(Center + new Vector3(quarter, quarter, -quarter), childActualSize);
+                _childBounds[2] = new BoundingBox(Center + new Vector3(-quarter, quarter, quarter), childActualSize);
+                _childBounds[3] = new BoundingBox(Center + new Vector3(quarter, quarter, quarter), childActualSize);
+                _childBounds[4] = new BoundingBox(Center + new Vector3(-quarter, -quarter, -quarter), childActualSize);
+                _childBounds[5] = new BoundingBox(Center + new Vector3(quarter, -quarter, -quarter), childActualSize);
+                _childBounds[6] = new BoundingBox(Center + new Vector3(-quarter, -quarter, quarter), childActualSize);
+                _childBounds[7] = new BoundingBox(Center + new Vector3(quarter, -quarter, quarter), childActualSize);
             }
 
             /// <summary>
@@ -617,42 +648,42 @@ namespace Octree
                     newLength,
                     _minSize,
                     _looseness,
-                    Center + new Point(-quarter, quarter, -quarter));
+                    Center + new Vector3(-quarter, quarter, -quarter));
                 _children[1] = new Node(
                     newLength,
                     _minSize,
                     _looseness,
-                    Center + new Point(quarter, quarter, -quarter));
+                    Center + new Vector3(quarter, quarter, -quarter));
                 _children[2] = new Node(
                     newLength,
                     _minSize,
                     _looseness,
-                    Center + new Point(-quarter, quarter, quarter));
+                    Center + new Vector3(-quarter, quarter, quarter));
                 _children[3] = new Node(
                     newLength,
                     _minSize,
                     _looseness,
-                    Center + new Point(quarter, quarter, quarter));
+                    Center + new Vector3(quarter, quarter, quarter));
                 _children[4] = new Node(
                     newLength,
                     _minSize,
                     _looseness,
-                    Center + new Point(-quarter, -quarter, -quarter));
+                    Center + new Vector3(-quarter, -quarter, -quarter));
                 _children[5] = new Node(
                     newLength,
                     _minSize,
                     _looseness,
-                    Center + new Point(quarter, -quarter, -quarter));
+                    Center + new Vector3(quarter, -quarter, -quarter));
                 _children[6] = new Node(
                     newLength,
                     _minSize,
                     _looseness,
-                    Center + new Point(-quarter, -quarter, quarter));
+                    Center + new Vector3(-quarter, -quarter, quarter));
                 _children[7] = new Node(
                     newLength,
                     _minSize,
                     _looseness,
-                    Center + new Point(quarter, -quarter, quarter));
+                    Center + new Vector3(quarter, -quarter, quarter));
             }
 
             /// <summary>
