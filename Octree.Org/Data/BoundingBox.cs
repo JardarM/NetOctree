@@ -5,12 +5,12 @@
 //     Copyright (c) 2017, Máté Cserép, http://codenet.hu
 //     All rights reserved.
 // </copyright>
-namespace Octree
-{
-    using System;
-    using System.Runtime.Serialization;
-    using System.Numerics;
 
+using System;
+using System.Runtime.Serialization;
+
+namespace OctreeOrg
+{
     /// <summary>
     /// Represents an axis aligned bounding box (AABB).
     /// </summary>
@@ -25,18 +25,18 @@ namespace Octree
         /// Gets or sets the center of the bounding box.
         /// </summary>
         [DataMember]
-        public Vector3 Center { get; set; }
+        public Point Center { get; set; }
 
         /// <summary>
         /// Gets or sets the extents of the bounding box. This is always half of the <see cref="Size"/>.
         /// </summary>
         [DataMember]
-        public Vector3 Extents { get; set; }
+        public Point Extents { get; set; }
 
         /// <summary>
         /// Gets or sets the size of the bounding box. This is always twice as large as the <see cref="Extents"/>.
         /// </summary>
-        public Vector3 Size
+        public Point Size
         {
             get { return Extents * 2; }
             set { Extents = value * 0.5f; }
@@ -48,12 +48,11 @@ namespace Octree
         /// <remarks>
         /// This is always equal to <c>center-extents</c>.
         /// </remarks>
-        public Vector3 Min;
-        // public Vector3 Min
-        // {
-        //     get { return Center - Extents; }
-        //     set { SetMinMax(value, Max); }
-        // }
+        public Point Min
+        {
+            get { return Center - Extents; }
+            set { SetMinMax(value, Max); }
+        }
 
         /// <summary>
         /// Gets or sets the maximal point of the box.
@@ -61,24 +60,21 @@ namespace Octree
         /// <remarks>
         /// This is always equal to <c>center+extents</c>.
         /// </remarks>
-        public Vector3 Max;
-        // public Vector3 Max
-        // {
-        //     get { return Center + Extents; }
-        //     set { SetMinMax(Min, value); }
-        // }
+        public Point Max
+        {
+            get { return Center + Extents; }
+            set { SetMinMax(Min, value); }
+        }
 
         /// <summary>
         /// Creates a new bounding box.
         /// </summary>
         /// <param name="center">The center of the box.</param>
         /// <param name="size">The size of the box.</param>
-        public BoundingBox(Vector3 center, Vector3 size)
+        public BoundingBox(Point center, Point size)
         {
             Center = center;
             Extents = size * 0.5f;
-            Min = Center - Extents;
-            Max = Center + Extents;
         }
 
         /// <summary>
@@ -86,30 +82,30 @@ namespace Octree
         /// </summary>
         /// <param name="min">The minimal point.</param>
         /// <param name="max">The maximal point.</param>
-        // public void SetMinMax(Vector3 min, Vector3 max)
-        // {
-        //     Extents = (max - min) * 0.5f;
-        //     Center = min + Extents;
-        // }
+        public void SetMinMax(Point min, Point max)
+        {
+            Extents = (max - min) * 0.5f;
+            Center = min + Extents;
+        }
 
-        // /// <summary>
-        // /// Grows the bounding box include the point.
-        // /// </summary>
-        // /// <param name="vector3">The specified point to include.</param>
-        // public void Encapsulate(Vector3 vector3)
-        // {
-        //     SetMinMax(Vector3.Min(Min, vector3), Vector3.Max(Max, vector3));
-        // }
-        //
-        // /// <summary>
-        // /// Grows the bounding box include the other box.
-        // /// </summary>
-        // /// <param name="box">The specified box to include.</param>
-        // public void Encapsulate(BoundingBox box)
-        // {
-        //     Encapsulate(box.Center - box.Extents);
-        //     Encapsulate(box.Center + box.Extents);
-        // }
+        /// <summary>
+        /// Grows the bounding box include the point.
+        /// </summary>
+        /// <param name="point">The specified point to include.</param>
+        public void Encapsulate(Point point)
+        {
+            SetMinMax(Point.Min(Min, point), Point.Max(Max, point));
+        }
+
+        /// <summary>
+        /// Grows the bounding box include the other box.
+        /// </summary>
+        /// <param name="box">The specified box to include.</param>
+        public void Encapsulate(BoundingBox box)
+        {
+            Encapsulate(box.Center - box.Extents);
+            Encapsulate(box.Center + box.Extents);
+        }
 
         /// <summary>
         /// Expands the bounds by increasing its <see cref="Size"/> by <paramref name="amount"/> along each side.
@@ -118,33 +114,29 @@ namespace Octree
         public void Expand(float amount)
         {
             amount *= 0.5f;
-            Extents += new Vector3(amount, amount, amount);
-            Min = Center - Extents;
-            Max = Center + Extents;
+            Extents += new Point(amount, amount, amount);
         }
 
         /// <summary>
         /// Expands the bounds by increasing its <see cref="Size"/> by <paramref name="amount"/> along each side.
         /// </summary>
         /// <param name="amount">The expansions for each dimension in order.</param>
-        public void Expand(Vector3 amount)
+        public void Expand(Point amount)
         {
             Extents += amount * 0.5f;
-            Min = Center - Extents;
-            Max = Center + Extents;
         }
 
         /// <summary>
         /// Determines whether the box contains the point.
         /// </summary>
-        /// <param name="vector3">The point to test.</param>
+        /// <param name="point">The point to test.</param>
         /// <returns><c>true</c> if the box contains the point; otherwise, <c>false</c>.</returns>
-        public bool Contains(Vector3 vector3)
+        public bool Contains(Point point)
         {
             return 
-                Min.X <= vector3.X && Max.X >= vector3.X && 
-                Min.Y <= vector3.Y && Max.Y >= vector3.Y && 
-                Min.Z <= vector3.Z && Max.Z >= vector3.Z;
+                Min.X <= point.X && Max.X >= point.X && 
+                Min.Y <= point.Y && Max.Y >= point.Y && 
+                Min.Z <= point.Z && Max.Z >= point.Z;
         }
 
         /// <summary>
@@ -179,7 +171,7 @@ namespace Octree
         /// <returns><c>true</c> if the box intersects with the ray, <c>false</c> otherwise.</returns>
         public bool IntersectRay(Ray ray, out float distance)
         {
-            var dirFrac = new Vector3(
+            Point dirFrac = new Point(
                 1f / ray.Direction.X,
                 1f / ray.Direction.Y,
                 1f / ray.Direction.Z
@@ -201,37 +193,6 @@ namespace Octree
                 distance = tmax;
                 return false;
             }
-
-            // if tmin > tmax, ray doesn't intersect AABB
-            if (tmin > tmax)
-            {
-                distance = tmax;
-                return false;
-            }
-
-            distance = tmin;
-            return true;
-        }
-        
-        public bool IntersectRayNew(ref Ray ray, out float distance)
-        {
-            var dirFrac = Vector3.One /  ray.Direction;
-
-            var d1 = (Min - ray.Origin) * dirFrac;
-            var d2 = (Max - ray.Origin) * dirFrac;
-            
-            var max = Vector3.Max(d1, d2);
-            var tmax = Math.Min(Math.Min(max.X, max.Y), max.Z);
-
-            // if tmax < 0, ray (line) is intersecting AABB, but the whole AABB is behind us
-            if (tmax < 0)
-            {
-                distance = tmax;
-                return false;
-            }
-
-            var min = Vector3.Min(d1, d2);
-            var tmin = Math.Max(Math.Max(min.X, min.Y), min.Z);
 
             // if tmin > tmax, ray doesn't intersect AABB
             if (tmin > tmax)

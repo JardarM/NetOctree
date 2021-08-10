@@ -38,33 +38,53 @@ namespace Octree.Console
         static void Main(string[] args)
         {
             var oc = new BoundsOctree<BBObject>(1.0f, Vector3.Zero, 0.01f, 1.0f);
+            var oco = new OctreeOrg.BoundsOctree<BBObject>(1.0f, new OctreeOrg.Point(0.0f, 0.0f, 0.0f), 0.01f, 1.0f);
             var nObjects = 1000;
             foreach (var i in Enumerable.Range(0, nObjects))
             {
                 var t = BBObject.GenRandom(); 
                 oc.Add(t, t.BB);
+                oco.Add(t, new OctreeOrg.BoundingBox(new OctreeOrg.Point(t.BB.Center.X, t.BB.Center.Y, t.BB.Center.Z), new OctreeOrg.Point(t.BB.Size.X, t.BB.Size.Y,t.BB.Size.Z)));
             }
 
             var nRays = 1000000;
             var hitList = new List<BBObject>();
+            var hitListOrg = new List<BBObject>();
             var rayList = new List<Ray>();
+            var rayListOrg = new List<OctreeOrg.Ray>();
             for (var i = 0; i < nRays; i++)
-                rayList.Add(new Ray(Vector3.Zero, Vector3.Normalize(BBObject.RandVec(1.0f))));
+            {
+                var rvec = Vector3.Normalize(BBObject.RandVec(1.0f));
+                rayList.Add(new Ray(Vector3.Zero, rvec));
+                var rvecOrg = new OctreeOrg.Point(rvec.X, rvec.Y, rvec.Z);
+                rayListOrg.Add(new OctreeOrg.Ray(new OctreeOrg.Point(0.0f, 0.0f, 0.0f), rvecOrg));
+            }
+                
 
             var st = DateTime.UtcNow;
             for (var i = 0; i < nRays; i++)
             {
-//                hitList.Clear();
-                oc.GetColliding(hitList, rayList[i]);
+                oco.GetColliding(hitListOrg, rayListOrg[i]);
             }
             var duration = DateTime.UtcNow - st;
-            System.Console.WriteLine($"Time old: {duration}");
-            System.Console.WriteLine($"rays/ms old: #{nRays/duration.TotalMilliseconds}");
+            System.Console.WriteLine($"Time org: {duration}");
+            System.Console.WriteLine($"rays/ms org: #{nRays/duration.TotalMilliseconds}");
 
             st = DateTime.UtcNow;
+            hitList.Clear();
             for (var i = 0; i < nRays; i++)
             {
-//                hitList.Clear();
+                oc.GetColliding(hitList, rayList[i]);
+            }
+            duration = DateTime.UtcNow - st;
+            System.Console.WriteLine($"Time old: {duration}");
+            System.Console.WriteLine($"rays/ms old: #{nRays/duration.TotalMilliseconds}");
+            
+            
+            st = DateTime.UtcNow;
+            hitList.Clear();
+            for (var i = 0; i < nRays; i++)
+            {
                 oc.GetCollidingNew(hitList, rayList[i]);
             }
             duration = DateTime.UtcNow - st;

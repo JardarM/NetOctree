@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Octree.Org\OctreeOrg.csproj" />
       <ProjectReference Include="..\Octree\Octree.csproj" />
     </ItemGroup>
 
