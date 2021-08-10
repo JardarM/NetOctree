@@ -337,20 +337,25 @@ namespace Octree
                     }
                 }
             }
-            
-            public void GetCollidingNew(ref Ray checkRay, List<T> result, float maxDistance = float.PositiveInfinity)
+
+            public void GetCollidingNew(ref Ray checkRay, List<T> result,
+                float maxDistance = float.PositiveInfinity)
             {
-                float distance;
+                var dirFact = Vector3.One / checkRay.Direction;
+                GetCollidingNew(ref checkRay, ref dirFact, result, maxDistance);
+            }
+            public void GetCollidingNew(ref Ray checkRay, ref Vector3 dirFrac, List<T> result, float maxDistance = float.PositiveInfinity)
+            {
                 // Is the input ray at least partially in this node?
-                if (!_bounds.IntersectRayNew(ref checkRay, out distance) || distance > maxDistance)
+                if (!_bounds.IntersectRayNew(ref checkRay, ref dirFrac, out var distance) || distance > maxDistance)
                 {
                     return;
                 }
 
                 // Check against any objects in this node
-                for (int i = 0; i < _objects.Count; i++)
+                for (var i = 0; i < _objects.Count; i++)
                 {
-                    if (_objects[i].Bounds.IntersectRayNew(ref checkRay, out distance) && distance <= maxDistance)
+                    if (_objects[i].Bounds.IntersectRayNew(ref checkRay, ref dirFrac, out distance) && distance <= maxDistance)
                     {
                         result.Add(_objects[i].Obj);
                     }
@@ -361,7 +366,7 @@ namespace Octree
                 {
                     for (int i = 0; i < 8; i++)
                     {
-                        _children[i].GetCollidingNew(ref checkRay, result, maxDistance);
+                        _children[i].GetCollidingNew(ref checkRay, ref dirFrac, result, maxDistance);
                     }
                 }
             }

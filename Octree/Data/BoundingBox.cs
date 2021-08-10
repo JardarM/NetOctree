@@ -213,9 +213,8 @@ namespace Octree
             return true;
         }
         
-        public bool IntersectRayNew(ref Ray ray, out float distance)
+        public bool IntersectRayNew(ref Ray ray, ref Vector3 dirFrac, out float distance)
         {
-            var dirFrac = Vector3.One /  ray.Direction;
 
             var d1 = (Min - ray.Origin) * dirFrac;
             var d2 = (Max - ray.Origin) * dirFrac;
