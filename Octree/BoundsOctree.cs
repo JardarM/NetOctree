@@ -214,7 +214,8 @@ namespace Octree
         
         public void GetCollidingNew(List<T> collidingWith, Ray checkRay, float maxDistance = float.PositiveInfinity)
         {
-            _rootNode.GetCollidingNew(ref checkRay, collidingWith, maxDistance);
+            var dirFact = Vector3.One / checkRay.Direction;
+            _rootNode.GetCollidingNew(ref checkRay, ref dirFact, collidingWith, maxDistance);
         }
 
         // #### PRIVATE METHODS ####

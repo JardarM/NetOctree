@@ -338,12 +338,6 @@ namespace Octree
                 }
             }
 
-            public void GetCollidingNew(ref Ray checkRay, List<T> result,
-                float maxDistance = float.PositiveInfinity)
-            {
-                var dirFact = Vector3.One / checkRay.Direction;
-                GetCollidingNew(ref checkRay, ref dirFact, result, maxDistance);
-            }
             public void GetCollidingNew(ref Ray checkRay, ref Vector3 dirFrac, List<T> result, float maxDistance = float.PositiveInfinity)
             {
                 // Is the input ray at least partially in this node?
