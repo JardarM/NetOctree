@@ -76,7 +76,7 @@ namespace Octree
 		/// Gets the bounding box that represents the whole octree
 		/// </summary>
 		/// <value>The bounding box of the root node.</value>
-		public BoundingBoxBound MaxBounds
+		public BoundingBox MaxBounds
         {
             get { return _rootNode.Bounds; }
         }
@@ -111,7 +111,7 @@ namespace Octree
         /// </summary>
         /// <param name="obj">Object to add.</param>
         /// <param name="objBounds">3D bounding box around the object.</param>
-        public void Add(T obj, BoundingBoxBound objBounds)
+        public void Add(T obj, BoundingBox objBounds)
         {
             // Add object or expand the octree until it can be added
             int count = 0; // Safety check against infinite/excessive growth
@@ -154,7 +154,7 @@ namespace Octree
         /// <param name="obj">Object to remove.</param>
         /// <param name="objBounds">3D bounding box around the object.</param>
         /// <returns>True if the object was removed successfully.</returns>
-        public bool Remove(T obj, BoundingBoxBound objBounds)
+        public bool Remove(T obj, BoundingBox objBounds)
         {
             bool removed = _rootNode.Remove(obj, objBounds);
 
@@ -173,7 +173,7 @@ namespace Octree
         /// </summary>
         /// <param name="checkBounds">bounds to check.</param>
         /// <returns>True if there was a collision.</returns>
-        public bool IsColliding(BoundingBoxBound checkBounds)
+        public bool IsColliding(BoundingBox checkBounds)
         {
             return _rootNode.IsColliding(ref checkBounds);
         }
@@ -196,7 +196,7 @@ namespace Octree
         /// <param name="collidingWith">list to store intersections.</param>
         /// <param name="checkBounds">bounds to check.</param>
         /// <returns>Objects that intersect with the specified bounds.</returns>
-        public void GetColliding(List<T> collidingWith, BoundingBoxBound checkBounds)
+        public void GetColliding(List<T> collidingWith, BoundingBox checkBounds)
         {
             _rootNode.GetColliding(ref checkBounds, collidingWith);
         }

@@ -9,7 +9,7 @@ namespace Octree.Test
     public class BBObject
     {
         public int Id;
-        public BoundingBoxBound BB;
+        public BoundingBox BB;
 
         private static int count = 0;
         public static BBObject GenRandom()
@@ -19,7 +19,7 @@ namespace Octree.Test
             return new BBObject()
             {
                 Id = count,
-                BB = new BoundingBoxBound(
+                BB = new BoundingBox(
                     RandVec(2.0f),
                     RandVec(0.1f)
                 )

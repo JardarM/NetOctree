@@ -53,7 +53,7 @@ namespace Octree
             /// <summary>
             /// Bounding box that represents this node
             /// </summary>
-            private BoundingBoxBound _bounds;
+            private BoundingBox _bounds;
 
             /// <summary>
             /// Objects in this node
@@ -68,7 +68,7 @@ namespace Octree
             /// <summary>
             /// Bounds of potential children to this node. These are actual size (with looseness taken into account), not base size
             /// </summary>
-            private BoundingBoxBound[] _childBounds;
+            private BoundingBox[] _childBounds;
 
             /// <summary>
             /// If there are already NumObjectsAllowed in a node, we split it into children
@@ -99,13 +99,13 @@ namespace Octree
                 /// <summary>
                 /// Object bounds
                 /// </summary>
-                public BoundingBoxBound Bounds;
+                public BoundingBox Bounds;
             }
 
             /// <summary>
             /// Gets the bounding box that represents this node
             /// </summary>
-            public BoundingBoxBound Bounds
+            public BoundingBox Bounds
             {
                 get { return _bounds; }
             }
@@ -130,7 +130,7 @@ namespace Octree
             /// <param name="obj">Object to add.</param>
             /// <param name="objBounds">3D bounding box around the object.</param>
             /// <returns>True if the object fits entirely within this node.</returns>
-            public bool Add(T obj, BoundingBoxBound objBounds)
+            public bool Add(T obj, BoundingBox objBounds)
             {
                 if (!Encapsulates(ref _bounds, ref objBounds))
                 {
@@ -185,7 +185,7 @@ namespace Octree
             /// <param name="obj">Object to remove.</param>
             /// <param name="objBounds">3D bounding box around the object.</param>
             /// <returns>True if the object was removed successfully.</returns>
-            public bool Remove(T obj, BoundingBoxBound objBounds)
+            public bool Remove(T obj, BoundingBox objBounds)
             {
                 if (!Encapsulates(ref _bounds, ref objBounds))
                 {
@@ -199,7 +199,7 @@ namespace Octree
             /// </summary>
             /// <param name="checkBounds">Bounds to check.</param>
             /// <returns>True if there was a collision.</returns>
-            public bool IsColliding(ref BoundingBoxBound checkBounds)
+            public bool IsColliding(ref BoundingBox checkBounds)
             {
                 // Are the input bounds at least partially in this node?
                 if (!_bounds.Intersects(ref checkBounds))
@@ -275,7 +275,7 @@ namespace Octree
             /// <param name="checkBounds">Bounds to check. Passing by ref as it improves performance with structs.</param>
             /// <param name="result">List result.</param>
             /// <returns>Objects that intersect with the specified bounds.</returns>
-            public void GetColliding(ref BoundingBoxBound checkBounds, List<T> result)
+            public void GetColliding(ref BoundingBox checkBounds, List<T> result)
             {
                 // Are the input bounds at least partially in this node?
                 if (!_bounds.Intersects(ref checkBounds))
@@ -489,20 +489,20 @@ namespace Octree
                 _adjLength = _looseness * baseLengthVal;
 
                 // Create the bounding box.
-                _bounds = new BoundingBoxBound(Center, new Vector3(_adjLength*0.5f));
+                _bounds = new BoundingBox(Center, new Vector3(_adjLength*0.5f));
 
                 float quarter = BaseLength / 4f;
                 float childActualLength = quarter * _looseness;
                 Vector3 childActualSize = new Vector3(childActualLength);
-                _childBounds = new BoundingBoxBound[8];
-                _childBounds[0] = new BoundingBoxBound(Center + new Vector3(-quarter, quarter, -quarter), childActualSize);
-                _childBounds[1] = new BoundingBoxBound(Center + new Vector3(quarter, quarter, -quarter), childActualSize);
-                _childBounds[2] = new BoundingBoxBound(Center + new Vector3(-quarter, quarter, quarter), childActualSize);
-                _childBounds[3] = new BoundingBoxBound(Center + new Vector3(quarter, quarter, quarter), childActualSize);
-                _childBounds[4] = new BoundingBoxBound(Center + new Vector3(-quarter, -quarter, -quarter), childActualSize);
-                _childBounds[5] = new BoundingBoxBound(Center + new Vector3(quarter, -quarter, -quarter), childActualSize);
-                _childBounds[6] = new BoundingBoxBound(Center + new Vector3(-quarter, -quarter, quarter), childActualSize);
-                _childBounds[7] = new BoundingBoxBound(Center + new Vector3(quarter, -quarter, quarter), childActualSize);
+                _childBounds = new BoundingBox[8];
+                _childBounds[0] = new BoundingBox(Center + new Vector3(-quarter, quarter, -quarter), childActualSize);
+                _childBounds[1] = new BoundingBox(Center + new Vector3(quarter, quarter, -quarter), childActualSize);
+                _childBounds[2] = new BoundingBox(Center + new Vector3(-quarter, quarter, quarter), childActualSize);
+                _childBounds[3] = new BoundingBox(Center + new Vector3(quarter, quarter, quarter), childActualSize);
+                _childBounds[4] = new BoundingBox(Center + new Vector3(-quarter, -quarter, -quarter), childActualSize);
+                _childBounds[5] = new BoundingBox(Center + new Vector3(quarter, -quarter, -quarter), childActualSize);
+                _childBounds[6] = new BoundingBox(Center + new Vector3(-quarter, -quarter, quarter), childActualSize);
+                _childBounds[7] = new BoundingBox(Center + new Vector3(quarter, -quarter, quarter), childActualSize);
             }
 
             /// <summary>
@@ -510,7 +510,7 @@ namespace Octree
             /// </summary>
             /// <param name="obj">Object to add.</param>
             /// <param name="objBounds">3D bounding box around the object.</param>
-            private void SubAdd(T obj, BoundingBoxBound objBounds)
+            private void SubAdd(T obj, BoundingBox objBounds)
             {
                 // We know it fits at this level if we've got this far
 
@@ -569,12 +569,12 @@ namespace Octree
             }
 
             /// <summary>
-            /// Private counterpart to the public <see cref="Remove(T, BoundingBoxBound)"/> method.
+            /// Private counterpart to the public <see cref="Remove(T, BoundingBox)"/> method.
             /// </summary>
             /// <param name="obj">Object to remove.</param>
             /// <param name="objBounds">3D bounding box around the object.</param>
             /// <returns>True if the object was removed successfully.</returns>
-            private bool SubRemove(T obj, BoundingBoxBound objBounds)
+            private bool SubRemove(T obj, BoundingBox objBounds)
             {
                 bool removed = false;
 
@@ -683,7 +683,7 @@ namespace Octree
             /// <param name="outerBounds">Outer bounds.</param>
             /// <param name="innerBounds">Inner bounds.</param>
             /// <returns>True if innerBounds is fully encapsulated by outerBounds.</returns>
-            private static bool Encapsulates(ref BoundingBoxBound outerBounds, ref BoundingBoxBound innerBounds)
+            private static bool Encapsulates(ref BoundingBox outerBounds, ref BoundingBox innerBounds)
             {
                 var min = innerBounds.Center - innerBounds.Extents;
                 if ( ! outerBounds.Contains(ref min)) return false;

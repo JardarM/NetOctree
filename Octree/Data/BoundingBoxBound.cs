@@ -11,15 +11,14 @@ using System.Runtime.CompilerServices;
 namespace Octree
 {
     using System;
-    using System.Runtime.Serialization;
     using System.Numerics;
 
-    public readonly struct BoundingBoxBound
+    public readonly struct BoundingBox
     {
         public Vector3 Center { get; }
         public Vector3 Extents { get; }
 
-        public BoundingBoxBound(Vector3 center, Vector3 extents)
+        public BoundingBox(Vector3 center, Vector3 extents)
         {
             Center = center;
             Extents = extents;
@@ -59,7 +58,7 @@ namespace Octree
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Intersects(ref BoundingBoxBound boxBound)
+        public bool Intersects(ref BoundingBox boxBound)
         {
             var mm = Center - Extents;
             var bm = boxBound.Center + boxBound.Extents;
@@ -142,13 +141,13 @@ namespace Octree
         public override bool Equals(object other)
         {
             bool result;
-            if (!(other is BoundingBoxBound))
+            if (!(other is BoundingBox))
             {
                 result = false;
             }
             else
             {
-                BoundingBoxBound boxBound = (BoundingBoxBound)other;
+                BoundingBox boxBound = (BoundingBox)other;
                 result = (Center.Equals(boxBound.Center) && Extents.Equals(boxBound.Extents));
             }
             return result;
@@ -170,12 +169,12 @@ namespace Octree
             );
         }
 
-        public static bool operator ==(BoundingBoxBound lhs, BoundingBoxBound rhs)
+        public static bool operator ==(BoundingBox lhs, BoundingBox rhs)
         {
             return lhs.Center == rhs.Center && lhs.Extents == rhs.Extents;
         }
 
-        public static bool operator !=(BoundingBoxBound lhs, BoundingBoxBound rhs)
+        public static bool operator !=(BoundingBox lhs, BoundingBox rhs)
         {
             return !(lhs == rhs);
         }

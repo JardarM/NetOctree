@@ -49,7 +49,7 @@ namespace Octree
             /// <summary>
             /// Bounding box that represents this node
             /// </summary>
-            private BoundingBoxPoint _bounds = default(BoundingBoxPoint);
+            private BoundingBox _bounds = default(BoundingBox);
 
             /// <summary>
             /// Objects in this node
@@ -64,7 +64,7 @@ namespace Octree
             /// <summary>
             /// Bounds of potential children to this node. These are actual size (with looseness taken into account), not base size
             /// </summary>
-            private BoundingBoxPoint[] _childBounds;
+            private BoundingBox[] _childBounds;
 
             /// <summary>
             /// If there are already NumObjectsAllowed in a node, we split it into children
@@ -409,19 +409,19 @@ namespace Octree
                 Center = centerVal;
 
                 // Create the bounding box.
-                _bounds = new BoundingBoxPoint(Center, new Vector3(SideLength * 0.5f));
+                _bounds = new BoundingBox(Center, new Vector3(SideLength * 0.5f));
 
                 float quarter = SideLength / 4f;
                 var childActualExtent = new Vector3(SideLength/4);
-                _childBounds = new BoundingBoxPoint[8];
-                _childBounds[0] = new BoundingBoxPoint(Center + new Vector3(-quarter, quarter, -quarter), childActualExtent);
-                _childBounds[1] = new BoundingBoxPoint(Center + new Vector3(quarter, quarter, -quarter), childActualExtent);
-                _childBounds[2] = new BoundingBoxPoint(Center + new Vector3(-quarter, quarter, quarter), childActualExtent);
-                _childBounds[3] = new BoundingBoxPoint(Center + new Vector3(quarter, quarter, quarter), childActualExtent);
-                _childBounds[4] = new BoundingBoxPoint(Center + new Vector3(-quarter, -quarter, -quarter), childActualExtent);
-                _childBounds[5] = new BoundingBoxPoint(Center + new Vector3(quarter, -quarter, -quarter), childActualExtent);
-                _childBounds[6] = new BoundingBoxPoint(Center + new Vector3(-quarter, -quarter, quarter), childActualExtent);
-                _childBounds[7] = new BoundingBoxPoint(Center + new Vector3(quarter, -quarter, quarter), childActualExtent);
+                _childBounds = new BoundingBox[8];
+                _childBounds[0] = new BoundingBox(Center + new Vector3(-quarter, quarter, -quarter), childActualExtent);
+                _childBounds[1] = new BoundingBox(Center + new Vector3(quarter, quarter, -quarter), childActualExtent);
+                _childBounds[2] = new BoundingBox(Center + new Vector3(-quarter, quarter, quarter), childActualExtent);
+                _childBounds[3] = new BoundingBox(Center + new Vector3(quarter, quarter, quarter), childActualExtent);
+                _childBounds[4] = new BoundingBox(Center + new Vector3(-quarter, -quarter, -quarter), childActualExtent);
+                _childBounds[5] = new BoundingBox(Center + new Vector3(quarter, -quarter, -quarter), childActualExtent);
+                _childBounds[6] = new BoundingBox(Center + new Vector3(-quarter, -quarter, quarter), childActualExtent);
+                _childBounds[7] = new BoundingBox(Center + new Vector3(quarter, -quarter, quarter), childActualExtent);
             }
 
             /// <summary>
@@ -557,7 +557,7 @@ namespace Octree
             /// <param name="outerBounds">Outer bounds.</param>
             /// <param name="vector3">Point.</param>
             /// <returns>True if innerBounds is fully encapsulated by outerBounds.</returns>
-            private static bool Encapsulates(BoundingBoxPoint outerBounds, Vector3 vector3)
+            private static bool Encapsulates(BoundingBox outerBounds, Vector3 vector3)
             {
                 return outerBounds.Contains(ref vector3);
             }

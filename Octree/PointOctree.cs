@@ -60,9 +60,9 @@ namespace Octree
 	    /// Gets the bounding box that represents the whole octree
 	    /// </summary>
 	    /// <value>The bounding box of the root node.</value>
-	    public BoundingBoxPoint MaxBounds
+	    public BoundingBox MaxBounds
 	    {
-		    get { return new BoundingBoxPoint(_rootNode.Center, new Vector3(_rootNode.SideLength*0.5f)); }
+		    get { return new BoundingBox(_rootNode.Center, new Vector3(_rootNode.SideLength*0.5f)); }
 	    }
 
 		/// <summary>
