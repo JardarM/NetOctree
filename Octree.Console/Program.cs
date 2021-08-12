@@ -13,7 +13,7 @@ namespace Octree.Console
         private static int count = 0;
         public static BBObject GenRandom()
         {
-            var rand = new Random();
+            var rand = new Random(123);
             count++;
             return new BBObject()
             {
@@ -25,7 +25,7 @@ namespace Octree.Console
             };
         }
 
-        public static Random rand = new Random();
+        public static Random rand = new Random(123);
         public static Vector3 RandVec(float s)
         {
             return new Vector3((float) (rand.NextDouble() - 0.5f) * s, (float) (rand.NextDouble() - 0.5f) * s,
@@ -37,21 +37,22 @@ namespace Octree.Console
     {
         static void Main(string[] args)
         {
-//            NearestPointTest();
-            RayIntersectionTest();
+            NearestPointTest();
+//            RayIntersectionTest();
         }
         
         private static void NearestPointTest()
         {
             var oc = new PointOctree<BBObject>(1.0f, Vector3.Zero, 0.01f);
-            var oco = new OctreeOrg.PointOctree<BBObject>(1.0f, new OctreeOrg.Point(0.0f, 0.0f, 0.0f), 0.005f);
+            var oco = new OctreeOrg.PointOctree<BBObject>(1.0f, new OctreeOrg.Point(0.0f, 0.0f, 0.0f), 0.01f);
             var nObjects = 100000;
-            var bbObjects = Enumerable.Range(0, nObjects).Select(t => BBObject.GenRandom());
+            var bbObjects = Enumerable.Range(0, nObjects).Select(t => BBObject.GenRandom()).ToList();
             
             var st = DateTime.UtcNow;
             foreach (var t in bbObjects)
             {
-                oc.Add(t, t.BB.Center);
+                oco.Add(t,new OctreeOrg.Point(t.BB.Center.X, t.BB.Center.Y, t.BB.Center.Z));
+                
             }
             var duration = DateTime.UtcNow - st;
             System.Console.WriteLine($"Add time org: {duration}");
@@ -59,10 +60,10 @@ namespace Octree.Console
             st = DateTime.UtcNow;
             foreach (var t in bbObjects)
             {
-                oco.Add(t,new OctreeOrg.Point(t.BB.Center.X, t.BB.Center.Y, t.BB.Center.Z));
+                oc.Add(t, t.BB.Center);
             }
             duration = DateTime.UtcNow - st;
-            System.Console.WriteLine($"Add time old: {duration}");
+            System.Console.WriteLine($"Add time new: {duration}");
 
             var nRays = 1000000;
             var hitList = new List<BBObject>();
@@ -81,14 +82,28 @@ namespace Octree.Console
             for (var i = 0; i < nRays; i++)
             {
                 var pt = pointListOrg[i];
-                var hitListOrg = oco.GetNearby(pt.Item1, pt.Item2 );
+                var hitListOrg = oco.GetNearby(pt.Item1, pt.Item2);
                 hitCount += hitListOrg.Length;
+                
+                // var ptn = pointList[i];
+                // hitList.Clear();
+                // oc.GetNearby(ptn.Item1, ptn.Item2, hitList, false);
+                //
+                // if (hitListOrg.Length != hitList.Count)
+                // {
+                //     System.Console.WriteLine("Sequence Old:");
+                //     oco.GetNearby(pt.Item1, pt.Item2, true );
+                //     System.Console.WriteLine();
+                //     System.Console.WriteLine("Sequence new:");
+                //     oc.GetNearby(ptn.Item1, ptn.Item2, hitList, true);
+                //     System.Console.WriteLine("Why?");
+                // }
             }
 
-            duration = DateTime.UtcNow - st;
-            System.Console.WriteLine($"Time org: {duration}");
+            var durationOld = DateTime.UtcNow - st;
+            System.Console.WriteLine($"Time org: {durationOld}");
             System.Console.WriteLine($"Items: {hitCount}");
-            System.Console.WriteLine($"per ms org: #{nRays / duration.TotalMilliseconds}");
+            System.Console.WriteLine($"per ms org: #{nRays / durationOld.TotalMilliseconds}");
 
             
             st = DateTime.UtcNow;
@@ -101,10 +116,12 @@ namespace Octree.Console
                 hitCount += hitList.Count;
             }
 
-            duration = DateTime.UtcNow - st;
-            System.Console.WriteLine($"Time old: {duration}");
+            var durationNew = DateTime.UtcNow - st;
+            System.Console.WriteLine($"Time new: {durationNew}");
             System.Console.WriteLine($"Items: {hitCount}");
-            System.Console.WriteLine($"per ms new: #{nRays / duration.TotalMilliseconds}");
+            System.Console.WriteLine($"per ms new: #{nRays / durationNew.TotalMilliseconds}");
+            
+            System.Console.WriteLine($"RATIO: {durationOld/durationNew}");
         }
 
         private static void RayIntersectionTest()
@@ -118,7 +135,7 @@ namespace Octree.Console
                 oc.Add(t, t.BB);
                 oco.Add(t,
                     new OctreeOrg.BoundingBox(new OctreeOrg.Point(t.BB.Center.X, t.BB.Center.Y, t.BB.Center.Z),
-                        new OctreeOrg.Point(t.BB.Size.X, t.BB.Size.Y, t.BB.Size.Z)));
+                        new OctreeOrg.Point(t.BB.Extents.X*2.0f, t.BB.Extents.Y*2.0f, t.BB.Extents.Z*2.0f)));
             }
 
             var nRays = 1000000;
@@ -141,9 +158,10 @@ namespace Octree.Console
                 oco.GetColliding(hitListOrg, rayListOrg[i]);
             }
 
-            var duration = DateTime.UtcNow - st;
-            System.Console.WriteLine($"Time org: {duration}");
-            System.Console.WriteLine($"rays/ms org: #{nRays / duration.TotalMilliseconds}");
+            var durationOld = DateTime.UtcNow - st;
+            System.Console.WriteLine($"Time org: {durationOld}");
+            System.Console.WriteLine($"#Hits: {hitListOrg.Count}");
+            System.Console.WriteLine($"rays/ms org: #{nRays / durationOld.TotalMilliseconds}");
 
             st = DateTime.UtcNow;
             hitList.Clear();
@@ -152,21 +170,13 @@ namespace Octree.Console
                 oc.GetColliding(hitList, rayList[i]);
             }
 
-            duration = DateTime.UtcNow - st;
-            System.Console.WriteLine($"Time old: {duration}");
-            System.Console.WriteLine($"rays/ms old: #{nRays / duration.TotalMilliseconds}");
+            var durationNew = DateTime.UtcNow - st;
+            System.Console.WriteLine($"Time old: {durationNew}");
+            System.Console.WriteLine($"#Hits: {hitList.Count}");
+            System.Console.WriteLine($"rays/ms old: #{nRays / durationOld.TotalMilliseconds}");
+            
+            System.Console.WriteLine($"RATIO: {durationOld/durationNew}");
 
-
-            st = DateTime.UtcNow;
-            hitList.Clear();
-            for (var i = 0; i < nRays; i++)
-            {
-                oc.GetCollidingNew(hitList, rayList[i]);
-            }
-
-            duration = DateTime.UtcNow - st;
-            System.Console.WriteLine($"Time new: {duration}");
-            System.Console.WriteLine($"rays/ms new: #{nRays / duration.TotalMilliseconds}");
         }
     }
 }

@@ -6,6 +6,7 @@
 //     All rights reserved.
 // </copyright>
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using NLog;
@@ -19,6 +20,10 @@ namespace OctreeOrg
         /// </summary>
         private class Node
         {
+            
+            private static int nodeCounter = 0;
+            private int nodeId = nodeCounter++;
+
             /// <summary>
             /// The logger
             /// </summary>
@@ -230,19 +235,35 @@ namespace OctreeOrg
                 // Does the node contain this position at all?
                 // Note: Expanding the bounds is not exactly the same as a real distance check, but it's fast.
                 // TODO: Does someone have a fast AND accurate formula to do this check?
+                // if ( print ) Console.Write($" {nodeId} ");
+                // if (nodeId == 4474 && print)
+                // {
+                //     Console.WriteLine(this._bounds);
+                //     Console.WriteLine(position);
+                //     Console.WriteLine(maxDistance);
+                // }
                 _bounds.Expand(new Point(maxDistance * 2, maxDistance * 2, maxDistance * 2));
                 bool contained = _bounds.Contains(position);
                 _bounds.Size = _actualBoundsSize;
                 if (!contained)
                 {
+                    // if (print) Console.Write("X");
                     return;
                 }
 
+                // if (print) Console.Write("I");
                 // Check against any objects in this node
                 for (int i = 0; i < _objects.Count; i++)
                 {
+                    // var a = position;
+                    // var b = _objects[i].Pos;
+                    // Point vector = new Point(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+                    // var dist = vector.X * vector.X + vector.Y * vector.Y + vector.Z * vector.Z;
+
+//                    if (dist <= maxDistance*maxDistance)
                     if (Point.Distance(position, _objects[i].Pos) <= maxDistance)
                     {
+                        // if (print) Console.Write($"O{i}");
                         result.Add(_objects[i].Obj);
                     }
                 }

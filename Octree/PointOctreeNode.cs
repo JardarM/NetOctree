@@ -6,6 +6,8 @@
 //     All rights reserved.
 // </copyright>
 
+using System;
+using System.Net.NetworkInformation;
 using System.Numerics;
 
 namespace Octree
@@ -25,6 +27,9 @@ namespace Octree
             /// The logger
             /// </summary>
             private static readonly Logger Logger = LogManager.GetLogger("octree");
+
+            private static int nodeCounter = 0;
+            private int nodeId = nodeCounter++;
 
             /// <summary>
             /// Center of this node
@@ -68,11 +73,6 @@ namespace Octree
             /// A generally good number seems to be something around 8-15
             /// </remarks>
             private const int NumObjectsAllowed = 8;
-
-            /// <summary>
-            /// For reverting the bounds size after temporary changes
-            /// </summary>
-            private Vector3 _actualBoundsSize;
 
             /// <summary>
             /// Gets a value indicating whether this node has children
@@ -211,13 +211,27 @@ namespace Octree
             }
             public void GetNearby(ref Vector3 position, float maxDistance, float maxDistanceSquared, List<T> result)
             {
-                if (!_bounds.Contains(ref position, maxDistance)) return;
+                // if ( print ) Console.Write($" {nodeId} ");
+                // if (nodeId == 4474 && print)
+                // {
+                //     Console.WriteLine(this._bounds);
+                //     Console.WriteLine(position);
+                //     Console.WriteLine(maxDistance);
+                // }
+                if (!_bounds.Contains(ref position, maxDistance))
+                {
+                    // if (print) Console.Write("X");
+                    return;
+                }
+                // if (print) Console.Write("I");
 
                 // Check against any objects in this node
                 for (int i = 0; i < _objects.Count; i++)
                 {
                     if (Vector3.DistanceSquared(position, _objects[i].Pos) <= maxDistanceSquared)
+                    // if (Vector3.Distance(position, _objects[i].Pos) <= maxDistance)
                     {
+                        // if (print) Console.Write($"O{i}");
                         result.Add(_objects[i].Obj);
                     }
                 }
@@ -395,21 +409,19 @@ namespace Octree
                 Center = centerVal;
 
                 // Create the bounding box.
-                _actualBoundsSize = new Vector3(SideLength, SideLength, SideLength);
-                _bounds = new BoundingBoxPoint(Center, _actualBoundsSize * 0.5f);
+                _bounds = new BoundingBoxPoint(Center, new Vector3(SideLength * 0.5f));
 
-                float quarter = SideLength / 2f;
-                float childActualLength = SideLength / 2;
-                Vector3 childActualSize = new Vector3(childActualLength, childActualLength, childActualLength);
+                float quarter = SideLength / 4f;
+                var childActualExtent = new Vector3(SideLength/4);
                 _childBounds = new BoundingBoxPoint[8];
-                _childBounds[0] = new BoundingBoxPoint(Center + new Vector3(-quarter, quarter, -quarter), childActualSize);
-                _childBounds[1] = new BoundingBoxPoint(Center + new Vector3(quarter, quarter, -quarter), childActualSize);
-                _childBounds[2] = new BoundingBoxPoint(Center + new Vector3(-quarter, quarter, quarter), childActualSize);
-                _childBounds[3] = new BoundingBoxPoint(Center + new Vector3(quarter, quarter, quarter), childActualSize);
-                _childBounds[4] = new BoundingBoxPoint(Center + new Vector3(-quarter, -quarter, -quarter), childActualSize);
-                _childBounds[5] = new BoundingBoxPoint(Center + new Vector3(quarter, -quarter, -quarter), childActualSize);
-                _childBounds[6] = new BoundingBoxPoint(Center + new Vector3(-quarter, -quarter, quarter), childActualSize);
-                _childBounds[7] = new BoundingBoxPoint(Center + new Vector3(quarter, -quarter, quarter), childActualSize);
+                _childBounds[0] = new BoundingBoxPoint(Center + new Vector3(-quarter, quarter, -quarter), childActualExtent);
+                _childBounds[1] = new BoundingBoxPoint(Center + new Vector3(quarter, quarter, -quarter), childActualExtent);
+                _childBounds[2] = new BoundingBoxPoint(Center + new Vector3(-quarter, quarter, quarter), childActualExtent);
+                _childBounds[3] = new BoundingBoxPoint(Center + new Vector3(quarter, quarter, quarter), childActualExtent);
+                _childBounds[4] = new BoundingBoxPoint(Center + new Vector3(-quarter, -quarter, -quarter), childActualExtent);
+                _childBounds[5] = new BoundingBoxPoint(Center + new Vector3(quarter, -quarter, -quarter), childActualExtent);
+                _childBounds[6] = new BoundingBoxPoint(Center + new Vector3(-quarter, -quarter, quarter), childActualExtent);
+                _childBounds[7] = new BoundingBoxPoint(Center + new Vector3(quarter, -quarter, quarter), childActualExtent);
             }
 
             /// <summary>

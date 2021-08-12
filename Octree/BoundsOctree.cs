@@ -186,7 +186,8 @@ namespace Octree
         /// <returns>True if there was a collision.</returns>
         public bool IsColliding(Ray checkRay, float maxDistance)
         {
-            return _rootNode.IsColliding(ref checkRay, maxDistance);
+            var dirFact = Vector3.One / checkRay.Direction;
+            return _rootNode.IsColliding(ref checkRay, ref dirFact, maxDistance);
         }
 
         /// <summary>
@@ -209,13 +210,8 @@ namespace Octree
         /// <returns>Objects that intersect with the specified ray.</returns>
         public void GetColliding(List<T> collidingWith, Ray checkRay, float maxDistance = float.PositiveInfinity)
         {
-            _rootNode.GetColliding(ref checkRay, collidingWith, maxDistance);
-        }
-        
-        public void GetCollidingNew(List<T> collidingWith, Ray checkRay, float maxDistance = float.PositiveInfinity)
-        {
             var dirFact = Vector3.One / checkRay.Direction;
-            _rootNode.GetCollidingNew(ref checkRay, ref dirFact, collidingWith, maxDistance);
+            _rootNode.GetColliding(ref checkRay, ref dirFact, collidingWith, maxDistance);
         }
 
         // #### PRIVATE METHODS ####

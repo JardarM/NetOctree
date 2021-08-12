@@ -53,7 +53,7 @@ namespace Octree
             /// <summary>
             /// Bounding box that represents this node
             /// </summary>
-            private BoundingBoxBound _bounds = default(BoundingBoxBound);
+            private BoundingBoxBound _bounds;
 
             /// <summary>
             /// Objects in this node
@@ -63,7 +63,7 @@ namespace Octree
             /// <summary>
             /// Child nodes, if any
             /// </summary>
-            private Node[] _children = null;
+            private Node[] _children;
 
             /// <summary>
             /// Bounds of potential children to this node. These are actual size (with looseness taken into account), not base size
@@ -132,7 +132,7 @@ namespace Octree
             /// <returns>True if the object fits entirely within this node.</returns>
             public bool Add(T obj, BoundingBoxBound objBounds)
             {
-                if (!Encapsulates(_bounds, objBounds))
+                if (!Encapsulates(ref _bounds, ref objBounds))
                 {
                     return false;
                 }
@@ -187,7 +187,7 @@ namespace Octree
             /// <returns>True if the object was removed successfully.</returns>
             public bool Remove(T obj, BoundingBoxBound objBounds)
             {
-                if (!Encapsulates(_bounds, objBounds))
+                if (!Encapsulates(ref _bounds, ref objBounds))
                 {
                     return false;
                 }
@@ -202,7 +202,7 @@ namespace Octree
             public bool IsColliding(ref BoundingBoxBound checkBounds)
             {
                 // Are the input bounds at least partially in this node?
-                if (!_bounds.Intersects(checkBounds))
+                if (!_bounds.Intersects(ref checkBounds))
                 {
                     return false;
                 }
@@ -210,7 +210,7 @@ namespace Octree
                 // Check against any objects in this node
                 for (int i = 0; i < _objects.Count; i++)
                 {
-                    if (_objects[i].Bounds.Intersects(checkBounds))
+                    if (_objects[i].Bounds.Intersects(ref checkBounds))
                     {
                         return true;
                     }
@@ -237,11 +237,10 @@ namespace Octree
             /// <param name="checkRay">Ray to check.</param>
             /// <param name="maxDistance">Distance to check.</param>
             /// <returns>True if there was a collision.</returns>
-            public bool IsColliding(ref Ray checkRay, float maxDistance = float.PositiveInfinity)
+            public bool IsColliding(ref Ray checkRay, ref Vector3 dirFact, float maxDistance = float.PositiveInfinity)
             {
                 // Is the input ray at least partially in this node?
-                float distance;
-                if (!_bounds.IntersectRay(checkRay, out distance) || distance > maxDistance)
+                if (!_bounds.IntersectRay(ref checkRay, ref dirFact, out var distance) || distance > maxDistance)
                 {
                     return false;
                 }
@@ -249,7 +248,7 @@ namespace Octree
                 // Check against any objects in this node
                 for (int i = 0; i < _objects.Count; i++)
                 {
-                    if (_objects[i].Bounds.IntersectRay(checkRay, out distance) && distance <= maxDistance)
+                    if (_objects[i].Bounds.IntersectRay(ref checkRay, ref dirFact, out distance) && distance <= maxDistance)
                     {
                         return true;
                     }
@@ -260,7 +259,7 @@ namespace Octree
                 {
                     for (int i = 0; i < 8; i++)
                     {
-                        if (_children[i].IsColliding(ref checkRay, maxDistance))
+                        if (_children[i].IsColliding(ref checkRay, ref dirFact, maxDistance))
                         {
                             return true;
                         }
@@ -279,7 +278,7 @@ namespace Octree
             public void GetColliding(ref BoundingBoxBound checkBounds, List<T> result)
             {
                 // Are the input bounds at least partially in this node?
-                if (!_bounds.Intersects(checkBounds))
+                if (!_bounds.Intersects(ref checkBounds))
                 {
                     return;
                 }
@@ -287,7 +286,7 @@ namespace Octree
                 // Check against any objects in this node
                 for (int i = 0; i < _objects.Count; i++)
                 {
-                    if (_objects[i].Bounds.Intersects(checkBounds))
+                    if (_objects[i].Bounds.Intersects(ref checkBounds))
                     {
                         result.Add(_objects[i].Obj);
                     }
@@ -310,38 +309,10 @@ namespace Octree
             /// <param name="maxDistance">Distance to check.</param>
             /// <param name="result">List result.</param>
             /// <returns>Objects that intersect with the specified ray.</returns>
-            public void GetColliding(ref Ray checkRay, List<T> result, float maxDistance = float.PositiveInfinity)
-            {
-                float distance;
-                // Is the input ray at least partially in this node?
-                if (!_bounds.IntersectRay(checkRay, out distance) || distance > maxDistance)
-                {
-                    return;
-                }
-
-                // Check against any objects in this node
-                for (int i = 0; i < _objects.Count; i++)
-                {
-                    if (_objects[i].Bounds.IntersectRay(checkRay, out distance) && distance <= maxDistance)
-                    {
-                        result.Add(_objects[i].Obj);
-                    }
-                }
-
-                // Check children
-                if (_children != null)
-                {
-                    for (int i = 0; i < 8; i++)
-                    {
-                        _children[i].GetColliding(ref checkRay, result, maxDistance);
-                    }
-                }
-            }
-
-            public void GetCollidingNew(ref Ray checkRay, ref Vector3 dirFrac, List<T> result, float maxDistance = float.PositiveInfinity)
+            public void GetColliding(ref Ray checkRay, ref Vector3 dirFrac, List<T> result, float maxDistance = float.PositiveInfinity)
             {
                 // Is the input ray at least partially in this node?
-                if (!_bounds.IntersectRayNew(ref checkRay, ref dirFrac, out var distance) || distance > maxDistance)
+                if (!_bounds.IntersectRay(ref checkRay, ref dirFrac, out var distance) || distance > maxDistance)
                 {
                     return;
                 }
@@ -349,7 +320,7 @@ namespace Octree
                 // Check against any objects in this node
                 for (var i = 0; i < _objects.Count; i++)
                 {
-                    if (_objects[i].Bounds.IntersectRayNew(ref checkRay, ref dirFrac, out distance) && distance <= maxDistance)
+                    if (_objects[i].Bounds.IntersectRay(ref checkRay, ref dirFrac, out distance) && distance <= maxDistance)
                     {
                         result.Add(_objects[i].Obj);
                     }
@@ -360,7 +331,7 @@ namespace Octree
                 {
                     for (int i = 0; i < 8; i++)
                     {
-                        _children[i].GetCollidingNew(ref checkRay, ref dirFrac, result, maxDistance);
+                        _children[i].GetColliding(ref checkRay, ref dirFrac, result, maxDistance);
                     }
                 }
             }
@@ -409,7 +380,7 @@ namespace Octree
                     if (i == 0 || newBestFit == bestFit)
                     {
                         // In same octant as the other(s). Does it fit completely inside that octant?
-                        if (Encapsulates(_childBounds[newBestFit], curObj.Bounds))
+                        if (Encapsulates(ref _childBounds[newBestFit], ref curObj.Bounds))
                         {
                             if (bestFit < 0)
                             {
@@ -518,12 +489,11 @@ namespace Octree
                 _adjLength = _looseness * baseLengthVal;
 
                 // Create the bounding box.
-                Vector3 size = new Vector3(_adjLength, _adjLength, _adjLength);
-                _bounds = new BoundingBoxBound(Center, size);
+                _bounds = new BoundingBoxBound(Center, new Vector3(_adjLength*0.5f));
 
                 float quarter = BaseLength / 4f;
-                float childActualLength = (BaseLength / 2) * _looseness;
-                Vector3 childActualSize = new Vector3(childActualLength, childActualLength, childActualLength);
+                float childActualLength = quarter * _looseness;
+                Vector3 childActualSize = new Vector3(childActualLength);
                 _childBounds = new BoundingBoxBound[8];
                 _childBounds[0] = new BoundingBoxBound(Center + new Vector3(-quarter, quarter, -quarter), childActualSize);
                 _childBounds[1] = new BoundingBoxBound(Center + new Vector3(quarter, quarter, -quarter), childActualSize);
@@ -575,7 +545,7 @@ namespace Octree
                             // object's center is located in relation to the octree's center
                             int bestFitChild = BestFitChild(existingObj.Bounds.Center);
                             // Does it fit?
-                            if (Encapsulates(_children[bestFitChild]._bounds, existingObj.Bounds))
+                            if (Encapsulates(ref _children[bestFitChild]._bounds, ref existingObj.Bounds))
                             {
                                 _children[bestFitChild].SubAdd(existingObj.Obj, existingObj.Bounds); // Go a level deeper					
                                 _objects.Remove(existingObj); // Remove from here
@@ -586,7 +556,7 @@ namespace Octree
 
                 // Handle the new object we're adding now
                 int bestFit = BestFitChild(objBounds.Center);
-                if (Encapsulates(_children[bestFit]._bounds, objBounds))
+                if (Encapsulates(ref _children[bestFit]._bounds, ref objBounds))
                 {
                     _children[bestFit].SubAdd(obj, objBounds);
                 }
@@ -713,9 +683,12 @@ namespace Octree
             /// <param name="outerBounds">Outer bounds.</param>
             /// <param name="innerBounds">Inner bounds.</param>
             /// <returns>True if innerBounds is fully encapsulated by outerBounds.</returns>
-            private static bool Encapsulates(BoundingBoxBound outerBounds, BoundingBoxBound innerBounds)
+            private static bool Encapsulates(ref BoundingBoxBound outerBounds, ref BoundingBoxBound innerBounds)
             {
-                return outerBounds.Contains(innerBounds.Min) && outerBounds.Contains(innerBounds.Max);
+                var min = innerBounds.Center - innerBounds.Extents;
+                if ( ! outerBounds.Contains(ref min)) return false;
+                var max = innerBounds.Center + innerBounds.Extents;
+                return outerBounds.Contains(ref max);
             }
 
             /// <summary>

@@ -134,7 +134,7 @@ namespace OctreeOrg
         /// </summary>
         public override string ToString()
         {
-            return String.Format("({0:F1}, {1:F1}, {2:F1})", X, Y, Z);
+            return String.Format("({0}, {1}, {2})", X, Y, Z);
         }
 
         /// <summary>
