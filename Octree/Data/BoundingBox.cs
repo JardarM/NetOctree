@@ -5,6 +5,9 @@
 //     Copyright (c) 2017, Máté Cserép, http://codenet.hu
 //     All rights reserved.
 // </copyright>
+
+using System.Runtime.CompilerServices;
+
 namespace Octree
 {
     using System;
@@ -154,20 +157,21 @@ namespace Octree
                 Min.Z <= vector3.Z && Max.Z >= vector3.Z;
         }
         
-        public bool ContainsNew(ref Vector3 vector3, float maxDistance)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool ContainsNew(ref Vector3 pos, float maxDistance)
         {
             var e = Extents + new Vector3(maxDistance);
             var mm = Center - e;
             if (! (
-                mm.X <= vector3.X &&
-                mm.Y <= vector3.Y &&
-                mm.Z <= vector3.Z)) return false;
+                mm.X <= pos.X &&
+                mm.Y <= pos.Y &&
+                mm.Z <= pos.Z)) return false;
 
             mm = Center + e;
             return 
-                mm.X >= vector3.X &&
-                mm.Y >= vector3.Y &&
-                mm.Z >= vector3.Z;
+                mm.X >= pos.X &&
+                mm.Y >= pos.Y &&
+                mm.Z >= pos.Z;
         }
 
         /// <summary>
@@ -236,7 +240,38 @@ namespace Octree
             return true;
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IntersectRayNew(ref Ray ray, ref Vector3 dirFrac, out float distance)
+        {
+
+            var d1 = (Min - ray.Origin) * dirFrac;
+            var d2 = (Max - ray.Origin) * dirFrac;
+            
+            var mm = Vector3.Max(d1, d2);
+            var tMax = Math.Min(Math.Min(mm.X, mm.Y), mm.Z);
+
+            // if tmax < 0, ray (line) is intersecting AABB, but the whole AABB is behind us
+            if (tMax < 0)
+            {
+                distance = tMax;
+                return false;
+            }
+
+            mm = Vector3.Min(d1, d2);
+            var tMin = Math.Max(Math.Max(mm.X, mm.Y), mm.Z);
+
+            // if tmin > tmax, ray doesn't intersect AABB
+            if (tMin > tMax)
+            {
+                distance = tMax;
+                return false;
+            }
+
+            distance = tMin;
+            return true;
+        }
+        
+        public bool IntersectRayNewOld(ref Ray ray, ref Vector3 dirFrac, out float distance)
         {
 
             var d1 = (Min - ray.Origin) * dirFrac;

@@ -37,7 +37,8 @@ namespace Octree.Console
     {
         static void Main(string[] args)
         {
-            NearestPointTest();
+//            NearestPointTest();
+            RayIntersectionTest();
         }
         
         private static void NearestPointTest()

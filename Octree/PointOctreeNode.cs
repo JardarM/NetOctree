@@ -261,12 +261,7 @@ namespace Octree
             
             public void GetNearbyNew(ref Vector3 position, float maxDistance, float maxDistanceSquared, List<T> result)
             {
-
-                var contained = _bounds.ContainsNew(ref position, maxDistance);
-                if (!contained)
-                {
-                    return;
-                }
+                if (!_bounds.ContainsNew(ref position, maxDistance)) return;
 
                 // Check against any objects in this node
                 for (int i = 0; i < _objects.Count; i++)
