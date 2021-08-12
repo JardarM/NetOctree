@@ -154,20 +154,20 @@ namespace Octree
                 Min.Z <= vector3.Z && Max.Z >= vector3.Z;
         }
         
-        public bool ContainsNew(Vector3 vector3, float maxDistance)
+        public bool ContainsNew(ref Vector3 vector3, float maxDistance)
         {
             var e = Extents + new Vector3(maxDistance);
-            var min = Center - e;
+            var mm = Center - e;
             if (! (
-                min.X <= vector3.X &&
-                min.Y <= vector3.Y &&
-                min.Z <= vector3.Z)) return false;
+                mm.X <= vector3.X &&
+                mm.Y <= vector3.Y &&
+                mm.Z <= vector3.Z)) return false;
 
-            var max = Center + e;
+            mm = Center + e;
             return 
-                max.X >= vector3.X &&
-                max.Y >= vector3.Y &&
-                max.Z >= vector3.Z;
+                mm.X >= vector3.X &&
+                mm.Y >= vector3.Y &&
+                mm.Z >= vector3.Z;
         }
 
         /// <summary>

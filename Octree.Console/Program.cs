@@ -43,14 +43,25 @@ namespace Octree.Console
         private static void NearestPointTest()
         {
             var oc = new PointOctree<BBObject>(1.0f, Vector3.Zero, 0.01f);
-            var oco = new OctreeOrg.PointOctree<BBObject>(1.0f, new OctreeOrg.Point(0.0f, 0.0f, 0.0f), 0.01f);
+            var oco = new OctreeOrg.PointOctree<BBObject>(1.0f, new OctreeOrg.Point(0.0f, 0.0f, 0.0f), 0.005f);
             var nObjects = 100000;
-            foreach (var i in Enumerable.Range(0, nObjects))
+            var bbObjects = Enumerable.Range(0, nObjects).Select(t => BBObject.GenRandom());
+            
+            var st = DateTime.UtcNow;
+            foreach (var t in bbObjects)
             {
-                var t = BBObject.GenRandom();
                 oc.Add(t, t.BB.Center);
+            }
+            var duration = DateTime.UtcNow - st;
+            System.Console.WriteLine($"Add time org: {duration}");
+            
+            st = DateTime.UtcNow;
+            foreach (var t in bbObjects)
+            {
                 oco.Add(t,new OctreeOrg.Point(t.BB.Center.X, t.BB.Center.Y, t.BB.Center.Z));
             }
+            duration = DateTime.UtcNow - st;
+            System.Console.WriteLine($"Add time old: {duration}");
 
             var nRays = 1000000;
             var hitList = new List<BBObject>();
@@ -64,8 +75,7 @@ namespace Octree.Console
                 pointListOrg.Add((rvecOrg, pointTuple.Item2));
             }
 
-
-            var st = DateTime.UtcNow;
+            st = DateTime.UtcNow;
             var hitCount = 0;
             for (var i = 0; i < nRays; i++)
             {
@@ -74,7 +84,7 @@ namespace Octree.Console
                 hitCount += hitListOrg.Length;
             }
 
-            var duration = DateTime.UtcNow - st;
+            duration = DateTime.UtcNow - st;
             System.Console.WriteLine($"Time org: {duration}");
             System.Console.WriteLine($"Items: {hitCount}");
             System.Console.WriteLine($"per ms org: #{nRays / duration.TotalMilliseconds}");
