@@ -60,9 +60,9 @@ namespace Octree
 	    /// Gets the bounding box that represents the whole octree
 	    /// </summary>
 	    /// <value>The bounding box of the root node.</value>
-	    public BoundingBox MaxBounds
+	    public BoundingBoxBound MaxBounds
 	    {
-		    get { return new BoundingBox(_rootNode.Center, new Vector3(_rootNode.SideLength, _rootNode.SideLength, _rootNode.SideLength)); }
+		    get { return new BoundingBoxBound(_rootNode.Center, new Vector3(_rootNode.SideLength, _rootNode.SideLength, _rootNode.SideLength)); }
 	    }
 
 		/// <summary>
@@ -157,11 +157,10 @@ namespace Octree
         /// <param name="ray">The ray. Passing as ref to improve performance since it won't have to be copied.</param>
         /// <param name="maxDistance">Maximum distance from the ray to consider.</param>
         /// <returns>Objects within range.</returns>
-        public T[] GetNearby(Ray ray, float maxDistance)
+        public void GetNearby(Ray ray, float maxDistance, List<T> collidingWith)
         {
-            List<T> collidingWith = new List<T>();
-            _rootNode.GetNearby(ref ray, maxDistance, collidingWith);
-            return collidingWith.ToArray();
+            var dirFrac = new Vector3(1.0f) / ray.Direction;
+            _rootNode.GetNearby(ref ray, ref dirFrac, maxDistance, collidingWith);
         }
 
         /// <summary>
@@ -171,16 +170,9 @@ namespace Octree
         /// <param name="position">The position. Passing as ref to improve performance since it won't have to be copied.</param>
         /// <param name="maxDistance">Maximum distance from the position to consider.</param>
         /// <returns>Objects within range.</returns>
-        public T[] GetNearby(Vector3 position, float maxDistance)
+        public void GetNearby(Vector3 position, float maxDistance, List<T> collidingWith)
         {
-            List<T> collidingWith = new List<T>();
-            _rootNode.GetNearby(ref position, maxDistance, collidingWith);
-            return collidingWith.ToArray();
-        }
-        
-        public void GetNearbyNew(Vector3 position, float maxDistance, List<T> collidingWith)
-        {
-            _rootNode.GetNearbyNew(ref position, maxDistance, maxDistance*maxDistance, collidingWith);
+            _rootNode.GetNearby(ref position, maxDistance, maxDistance*maxDistance, collidingWith);
         }
 
         /// <summary>

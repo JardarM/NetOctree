@@ -22,7 +22,7 @@ namespace Octree
     /// designed with the exact same interface to provide maximum compatibility.
     /// </remarks>
     [DataContract]
-    public struct BoundingBox
+    public struct BoundingBoxBound
     {
         /// <summary>
         /// Gets or sets the center of the bounding box.
@@ -76,7 +76,7 @@ namespace Octree
         /// </summary>
         /// <param name="center">The center of the box.</param>
         /// <param name="size">The size of the box.</param>
-        public BoundingBox(Vector3 center, Vector3 size)
+        public BoundingBoxBound(Vector3 center, Vector3 size)
         {
             Center = center;
             Extents = size * 0.5f;
@@ -177,14 +177,14 @@ namespace Octree
         /// <summary>
         /// Determines whether the bounding box intersects with another box.
         /// </summary>
-        /// <param name="box">The box to test.</param>
+        /// <param name="boxBound">The box to test.</param>
         /// <returns><c>true</c> if the bounding box intersects with another box, <c>false</c> otherwise.</returns>
-        public bool Intersects(BoundingBox box)
+        public bool Intersects(BoundingBoxBound boxBound)
         {
             return 
-                Min.X <= box.Max.X && Max.X >= box.Min.X && 
-                Min.Y <= box.Max.Y && Max.Y >= box.Min.Y && 
-                Min.Z <= box.Max.Z && Max.Z >= box.Min.Z;
+                Min.X <= boxBound.Max.X && Max.X >= boxBound.Min.X && 
+                Min.Y <= boxBound.Max.Y && Max.Y >= boxBound.Min.Y && 
+                Min.Z <= boxBound.Max.Z && Max.Z >= boxBound.Min.Z;
         }
 
         /// <summary>
@@ -270,36 +270,6 @@ namespace Octree
             distance = tMin;
             return true;
         }
-        
-        public bool IntersectRayNewOld(ref Ray ray, ref Vector3 dirFrac, out float distance)
-        {
-
-            var d1 = (Min - ray.Origin) * dirFrac;
-            var d2 = (Max - ray.Origin) * dirFrac;
-            
-            var max = Vector3.Max(d1, d2);
-            var tmax = Math.Min(Math.Min(max.X, max.Y), max.Z);
-
-            // if tmax < 0, ray (line) is intersecting AABB, but the whole AABB is behind us
-            if (tmax < 0)
-            {
-                distance = tmax;
-                return false;
-            }
-
-            var min = Vector3.Min(d1, d2);
-            var tmin = Math.Max(Math.Max(min.X, min.Y), min.Z);
-
-            // if tmin > tmax, ray doesn't intersect AABB
-            if (tmin > tmax)
-            {
-                distance = tmax;
-                return false;
-            }
-
-            distance = tmin;
-            return true;
-        }
 
         /// <summary>
         /// Returns a hash code for this instance.
@@ -311,21 +281,21 @@ namespace Octree
         }
 
         /// <summary>
-        /// Determines whether the specified object as a <see cref="BoundingBox" /> is equal to this instance.
+        /// Determines whether the specified object as a <see cref="BoundingBoxBound" /> is equal to this instance.
         /// </summary>
-        /// <param name="other">The <see cref="BoundingBox" /> object to compare with this instance.</param>
+        /// <param name="other">The <see cref="BoundingBoxBound" /> object to compare with this instance.</param>
         /// <returns><c>true</c> if the specified box is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object other)
         {
             bool result;
-            if (!(other is BoundingBox))
+            if (!(other is BoundingBoxBound))
             {
                 result = false;
             }
             else
             {
-                BoundingBox box = (BoundingBox)other;
-                result = (Center.Equals(box.Center) && Extents.Equals(box.Extents));
+                BoundingBoxBound boxBound = (BoundingBoxBound)other;
+                result = (Center.Equals(boxBound.Center) && Extents.Equals(boxBound.Extents));
             }
             return result;
         }
@@ -358,7 +328,7 @@ namespace Octree
         /// </summary>
         /// <param name="lhs">The first box.</param>
         /// <param name="rhs">The second box.</param>
-        public static bool operator ==(BoundingBox lhs, BoundingBox rhs)
+        public static bool operator ==(BoundingBoxBound lhs, BoundingBoxBound rhs)
         {
             return lhs.Center == rhs.Center && lhs.Extents == rhs.Extents;
         }
@@ -368,7 +338,7 @@ namespace Octree
         /// </summary>
         /// <param name="lhs">The first box.</param>
         /// <param name="rhs">The second box.</param>
-        public static bool operator !=(BoundingBox lhs, BoundingBox rhs)
+        public static bool operator !=(BoundingBoxBound lhs, BoundingBoxBound rhs)
         {
             return !(lhs == rhs);
         }

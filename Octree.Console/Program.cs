@@ -8,7 +8,7 @@ namespace Octree.Console
     public class BBObject
     {
         public int Id;
-        public BoundingBox BB;
+        public BoundingBoxBound BB;
 
         private static int count = 0;
         public static BBObject GenRandom()
@@ -18,7 +18,7 @@ namespace Octree.Console
             return new BBObject()
             {
                 Id = count,
-                BB = new BoundingBox(
+                BB = new BoundingBoxBound(
                     RandVec(2.0f),
                     RandVec(0.1f)
                 )
@@ -90,19 +90,6 @@ namespace Octree.Console
             System.Console.WriteLine($"Items: {hitCount}");
             System.Console.WriteLine($"per ms org: #{nRays / duration.TotalMilliseconds}");
 
-            st = DateTime.UtcNow;
-            hitCount = 0;
-            for (var i = 0; i < nRays; i++)
-            {
-                var pt = pointList[i];
-                var hitListOrg = oc.GetNearby(pt.Item1, pt.Item2 );
-                hitCount += hitListOrg.Length;
-            }
-
-            duration = DateTime.UtcNow - st;
-            System.Console.WriteLine($"Time old: {duration}");
-            System.Console.WriteLine($"Items: {hitCount}");
-            System.Console.WriteLine($"per ms old: #{nRays / duration.TotalMilliseconds}");
             
             st = DateTime.UtcNow;
             hitCount = 0;
@@ -110,7 +97,7 @@ namespace Octree.Console
             {
                 var pt = pointList[i];
                 hitList.Clear();
-                oc.GetNearbyNew(pt.Item1, pt.Item2, hitList);
+                oc.GetNearby(pt.Item1, pt.Item2, hitList);
                 hitCount += hitList.Count;
             }
 

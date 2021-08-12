@@ -44,7 +44,7 @@ namespace Octree
             /// <summary>
             /// Bounding box that represents this node
             /// </summary>
-            private BoundingBox _bounds = default(BoundingBox);
+            private BoundingBoxPoint _bounds = default(BoundingBoxPoint);
 
             /// <summary>
             /// Objects in this node
@@ -59,7 +59,7 @@ namespace Octree
             /// <summary>
             /// Bounds of potential children to this node. These are actual size (with looseness taken into account), not base size
             /// </summary>
-            private BoundingBox[] _childBounds;
+            private BoundingBoxPoint[] _childBounds;
 
             /// <summary>
             /// If there are already NumObjectsAllowed in a node, we split it into children
@@ -91,7 +91,6 @@ namespace Octree
                 /// Object content
                 /// </summary>
                 public T Obj;
-
                 /// <summary>
                 /// Object position
                 /// </summary>
@@ -119,7 +118,7 @@ namespace Octree
             /// <returns></returns>
             public bool Add(T obj, Vector3 objPos)
             {
-                if (!Encapsulates(_bounds, objPos))
+                if (!_bounds.Contains(ref objPos))
                 {
                     return false;
                 }
@@ -174,7 +173,7 @@ namespace Octree
             /// <returns>True if the object was removed successfully.</returns>
             public bool Remove(T obj, Vector3 objPos)
             {
-                if (!Encapsulates(_bounds, objPos))
+                if (!_bounds.Contains(ref objPos))
                 {
                     return false;
                 }
@@ -188,18 +187,9 @@ namespace Octree
             /// <param name="maxDistance">Maximum distance from the ray to consider.</param>
             /// <param name="result">List result.</param>
             /// <returns>Objects within range.</returns>
-            public void GetNearby(ref Ray ray, float maxDistance, List<T> result)
+            public void GetNearby(ref Ray ray, ref Vector3 dirFrac, float maxDistance, List<T> result)
             {
-                // Does the ray hit this node at all?
-                // Note: Expanding the bounds is not exactly the same as a real distance check, but it's fast.
-                // TODO: Does someone have a fast AND accurate formula to do this check?
-                _bounds.Expand(new Vector3(maxDistance * 2, maxDistance * 2, maxDistance * 2));
-                bool intersected = _bounds.IntersectRay(ray);
-                _bounds.Size = _actualBoundsSize;
-                if (!intersected)
-                {
-                    return;
-                }
+                if (!_bounds.IntersectRay(ref ray, ref dirFrac, maxDistance, out float distance)) return;
 
                 // Check against any objects in this node
                 for (int i = 0; i < _objects.Count; i++)
@@ -215,53 +205,13 @@ namespace Octree
                 {
                     for (int i = 0; i < 8; i++)
                     {
-                        _children[i].GetNearby(ref ray, maxDistance, result);
+                        _children[i].GetNearby(ref ray, ref dirFrac, maxDistance, result);
                     }
                 }
             }
-
-            /// <summary>
-            /// Return objects that are within <paramref name="maxDistance"/> of the specified position.
-            /// </summary>
-            /// <param name="position">The position.</param>
-            /// <param name="maxDistance">Maximum distance from the position to consider.</param>
-            /// <param name="result">List result.</param>
-            /// <returns>Objects within range.</returns>
-            public void GetNearby(ref Vector3 position, float maxDistance, List<T> result)
+            public void GetNearby(ref Vector3 position, float maxDistance, float maxDistanceSquared, List<T> result)
             {
-                // Does the node contain this position at all?
-                // Note: Expanding the bounds is not exactly the same as a real distance check, but it's fast.
-                // TODO: Does someone have a fast AND accurate formula to do this check?
-                _bounds.Expand(maxDistance*2);
-                bool contained = _bounds.Contains(position);
-                _bounds.Size = _actualBoundsSize;
-                if (!contained)
-                {
-                    return;
-                }
-
-                // Check against any objects in this node
-                for (int i = 0; i < _objects.Count; i++)
-                {
-                    if (Vector3.Distance(position, _objects[i].Pos) <= maxDistance)
-                    {
-                        result.Add(_objects[i].Obj);
-                    }
-                }
-
-                // Check children
-                if (_children != null)
-                {
-                    for (int i = 0; i < 8; i++)
-                    {
-                        _children[i].GetNearby(ref position, maxDistance, result);
-                    }
-                }
-            }
-            
-            public void GetNearbyNew(ref Vector3 position, float maxDistance, float maxDistanceSquared, List<T> result)
-            {
-                if (!_bounds.ContainsNew(ref position, maxDistance)) return;
+                if (!_bounds.Contains(ref position, maxDistance)) return;
 
                 // Check against any objects in this node
                 for (int i = 0; i < _objects.Count; i++)
@@ -277,7 +227,7 @@ namespace Octree
                 {
                     for (int i = 0; i < 8; i++)
                     {
-                        _children[i].GetNearbyNew(ref position, maxDistance, maxDistanceSquared, result);
+                        _children[i].GetNearby(ref position, maxDistance, maxDistanceSquared, result);
                     }
                 }
             }
@@ -446,20 +396,20 @@ namespace Octree
 
                 // Create the bounding box.
                 _actualBoundsSize = new Vector3(SideLength, SideLength, SideLength);
-                _bounds = new BoundingBox(Center, _actualBoundsSize);
+                _bounds = new BoundingBoxPoint(Center, _actualBoundsSize * 0.5f);
 
-                float quarter = SideLength / 4f;
+                float quarter = SideLength / 2f;
                 float childActualLength = SideLength / 2;
                 Vector3 childActualSize = new Vector3(childActualLength, childActualLength, childActualLength);
-                _childBounds = new BoundingBox[8];
-                _childBounds[0] = new BoundingBox(Center + new Vector3(-quarter, quarter, -quarter), childActualSize);
-                _childBounds[1] = new BoundingBox(Center + new Vector3(quarter, quarter, -quarter), childActualSize);
-                _childBounds[2] = new BoundingBox(Center + new Vector3(-quarter, quarter, quarter), childActualSize);
-                _childBounds[3] = new BoundingBox(Center + new Vector3(quarter, quarter, quarter), childActualSize);
-                _childBounds[4] = new BoundingBox(Center + new Vector3(-quarter, -quarter, -quarter), childActualSize);
-                _childBounds[5] = new BoundingBox(Center + new Vector3(quarter, -quarter, -quarter), childActualSize);
-                _childBounds[6] = new BoundingBox(Center + new Vector3(-quarter, -quarter, quarter), childActualSize);
-                _childBounds[7] = new BoundingBox(Center + new Vector3(quarter, -quarter, quarter), childActualSize);
+                _childBounds = new BoundingBoxPoint[8];
+                _childBounds[0] = new BoundingBoxPoint(Center + new Vector3(-quarter, quarter, -quarter), childActualSize);
+                _childBounds[1] = new BoundingBoxPoint(Center + new Vector3(quarter, quarter, -quarter), childActualSize);
+                _childBounds[2] = new BoundingBoxPoint(Center + new Vector3(-quarter, quarter, quarter), childActualSize);
+                _childBounds[3] = new BoundingBoxPoint(Center + new Vector3(quarter, quarter, quarter), childActualSize);
+                _childBounds[4] = new BoundingBoxPoint(Center + new Vector3(-quarter, -quarter, -quarter), childActualSize);
+                _childBounds[5] = new BoundingBoxPoint(Center + new Vector3(quarter, -quarter, -quarter), childActualSize);
+                _childBounds[6] = new BoundingBoxPoint(Center + new Vector3(-quarter, -quarter, quarter), childActualSize);
+                _childBounds[7] = new BoundingBoxPoint(Center + new Vector3(quarter, -quarter, quarter), childActualSize);
             }
 
             /// <summary>
@@ -595,9 +545,9 @@ namespace Octree
             /// <param name="outerBounds">Outer bounds.</param>
             /// <param name="vector3">Point.</param>
             /// <returns>True if innerBounds is fully encapsulated by outerBounds.</returns>
-            private static bool Encapsulates(BoundingBox outerBounds, Vector3 vector3)
+            private static bool Encapsulates(BoundingBoxPoint outerBounds, Vector3 vector3)
             {
-                return outerBounds.Contains(vector3);
+                return outerBounds.Contains(ref vector3);
             }
 
             /// <summary>
