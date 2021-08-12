@@ -122,6 +122,13 @@ namespace Octree
             Min = Center - Extents;
             Max = Center + Extents;
         }
+        
+        public void ExpandNew(float amount)
+        {
+            Extents += new Vector3(amount);
+            Min = Center - Extents;
+            Max = Center + Extents;
+        }
 
         /// <summary>
         /// Expands the bounds by increasing its <see cref="Size"/> by <paramref name="amount"/> along each side.
@@ -145,6 +152,22 @@ namespace Octree
                 Min.X <= vector3.X && Max.X >= vector3.X && 
                 Min.Y <= vector3.Y && Max.Y >= vector3.Y && 
                 Min.Z <= vector3.Z && Max.Z >= vector3.Z;
+        }
+        
+        public bool ContainsNew(Vector3 vector3, float maxDistance)
+        {
+            var e = Extents + new Vector3(maxDistance);
+            var min = Center - e;
+            if (! (
+                min.X <= vector3.X &&
+                min.Y <= vector3.Y &&
+                min.Z <= vector3.Z)) return false;
+
+            var max = Center + e;
+            return 
+                max.X >= vector3.X &&
+                max.Y >= vector3.Y &&
+                max.Z >= vector3.Z;
         }
 
         /// <summary>

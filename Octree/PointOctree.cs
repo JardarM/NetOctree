@@ -177,6 +177,11 @@ namespace Octree
             _rootNode.GetNearby(ref position, maxDistance, collidingWith);
             return collidingWith.ToArray();
         }
+        
+        public void GetNearbyNew(Vector3 position, float maxDistance, List<T> collidingWith)
+        {
+            _rootNode.GetNearbyNew(ref position, maxDistance, maxDistance*maxDistance, collidingWith);
+        }
 
         /// <summary>
         /// Returns all objects in the tree.

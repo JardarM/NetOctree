@@ -232,7 +232,7 @@ namespace Octree
                 // Does the node contain this position at all?
                 // Note: Expanding the bounds is not exactly the same as a real distance check, but it's fast.
                 // TODO: Does someone have a fast AND accurate formula to do this check?
-                _bounds.Expand(new Vector3(maxDistance * 2, maxDistance * 2, maxDistance * 2));
+                _bounds.Expand(maxDistance*2);
                 bool contained = _bounds.Contains(position);
                 _bounds.Size = _actualBoundsSize;
                 if (!contained)
@@ -255,6 +255,34 @@ namespace Octree
                     for (int i = 0; i < 8; i++)
                     {
                         _children[i].GetNearby(ref position, maxDistance, result);
+                    }
+                }
+            }
+            
+            public void GetNearbyNew(ref Vector3 position, float maxDistance, float maxDistanceSquared, List<T> result)
+            {
+
+                var contained = _bounds.ContainsNew(position, maxDistance);
+                if (!contained)
+                {
+                    return;
+                }
+
+                // Check against any objects in this node
+                for (int i = 0; i < _objects.Count; i++)
+                {
+                    if (Vector3.DistanceSquared(position, _objects[i].Pos) <= maxDistanceSquared)
+                    {
+                        result.Add(_objects[i].Obj);
+                    }
+                }
+
+                // Check children
+                if (_children != null)
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        _children[i].GetNearbyNew(ref position, maxDistance, maxDistanceSquared, result);
                     }
                 }
             }
