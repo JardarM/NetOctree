@@ -7,12 +7,11 @@
 // </copyright>
 
 using System.Numerics;
+using System.Collections.Generic;
+using NLog;
 
 namespace Octree
 {
-    using System.Collections.Generic;
-    using NLog;
-
     /// <summary>
     /// A Dynamic Octree for storing any objects that can be described as a single point
     /// </summary>
@@ -29,7 +28,7 @@ namespace Octree
     /// See also BoundsOctree, where objects are described by AABB bounds.
     /// </remarks>
     /// <typeparam name="T">The content of the octree can be anything, since the bounds data is supplied separately.</typeparam>
-    public partial class PointOctree<T>
+    public class PointOctree<T> : IPointOctree<T>
     {
         /// <summary>
         /// The logger
@@ -39,7 +38,7 @@ namespace Octree
         /// <summary>
         /// Root node of the octree
         /// </summary>
-        private Node _rootNode;
+        private PointNode<T> _rootPointNode;
 
         /// <summary>
         /// Size that the octree was on creation
@@ -62,7 +61,7 @@ namespace Octree
 	    /// <value>The bounding box of the root node.</value>
 	    public BoundingBox MaxBounds
 	    {
-		    get { return new BoundingBox(_rootNode.Center, new Vector3(_rootNode.SideLength*0.5f)); }
+		    get { return new BoundingBox(_rootPointNode.Center, new Vector3(_rootPointNode.SideLength*0.5f)); }
 	    }
 
 		/// <summary>
@@ -83,7 +82,7 @@ namespace Octree
             Count = 0;
             _initialSize = initialWorldSize;
             _minSize = minNodeSize;
-            _rootNode = new Node(_initialSize, _minSize, initialWorldPos);
+            _rootPointNode = new PointNode<T>(_initialSize, _minSize, initialWorldPos);
         }
 
         // #### PUBLIC METHODS ####
@@ -97,9 +96,9 @@ namespace Octree
         {
             // Add object or expand the octree until it can be added
             int count = 0; // Safety check against infinite/excessive growth
-            while (!_rootNode.Add(obj, objPos))
+            while (!_rootPointNode.Add(obj, objPos))
             {
-                Grow(objPos - _rootNode.Center);
+                Grow(objPos - _rootPointNode.Center);
                 if (++count > 20)
                 {
                     Logger.Error(
@@ -118,7 +117,7 @@ namespace Octree
         /// <returns>True if the object was removed successfully.</returns>
         public bool Remove(T obj)
         {
-            bool removed = _rootNode.Remove(obj);
+            bool removed = _rootPointNode.Remove(obj);
 
             // See if we can shrink the octree down now that we've removed the item
             if (removed)
@@ -138,7 +137,7 @@ namespace Octree
         /// <returns>True if the object was removed successfully.</returns>
         public bool Remove(T obj, Vector3 objPos)
         {
-            bool removed = _rootNode.Remove(obj, objPos);
+            bool removed = _rootPointNode.Remove(obj, objPos);
 
             // See if we can shrink the octree down now that we've removed the item
             if (removed)
@@ -160,7 +159,7 @@ namespace Octree
         public void GetNearby(Ray ray, float maxDistance, List<T> collidingWith)
         {
             var dirFrac = new Vector3(1.0f) / ray.Direction;
-            _rootNode.GetNearby(ref ray, ref dirFrac, maxDistance, collidingWith);
+            _rootPointNode.GetNearby(ref ray, ref dirFrac, maxDistance, collidingWith);
         }
 
         /// <summary>
@@ -172,7 +171,7 @@ namespace Octree
         /// <returns>Objects within range.</returns>
         public void GetNearby(Vector3 position, float maxDistance, List<T> collidingWith)
         {
-            _rootNode.GetNearby(ref position, maxDistance, maxDistance*maxDistance, collidingWith);
+            _rootPointNode.GetNearby(ref position, maxDistance, maxDistance*maxDistance, collidingWith);
         }
 
         /// <summary>
@@ -183,7 +182,7 @@ namespace Octree
         public ICollection<T> GetAll()
         {
             List<T> objects = new List<T>(Count);
-            _rootNode.GetAll(objects);
+            _rootPointNode.GetAll(objects);
             return objects;
         }
 
@@ -198,19 +197,19 @@ namespace Octree
             int xDirection = direction.X >= 0 ? 1 : -1;
             int yDirection = direction.Y >= 0 ? 1 : -1;
             int zDirection = direction.Z >= 0 ? 1 : -1;
-            Node oldRoot = _rootNode;
-            float half = _rootNode.SideLength / 2;
-            float newLength = _rootNode.SideLength * 2;
-            Vector3 newCenter = _rootNode.Center + new Vector3(xDirection * half, yDirection * half, zDirection * half);
+            PointNode<T> oldRoot = _rootPointNode;
+            float half = _rootPointNode.SideLength / 2;
+            float newLength = _rootPointNode.SideLength * 2;
+            Vector3 newCenter = _rootPointNode.Center + new Vector3(xDirection * half, yDirection * half, zDirection * half);
 
             // Create a new, bigger octree root node
-            _rootNode = new Node(newLength, _minSize, newCenter);
+            _rootPointNode = new PointNode<T>(newLength, _minSize, newCenter);
 
             if (oldRoot.HasAnyObjects())
             {
                 // Create 7 new octree children to go with the old root as children of the new root
-                int rootPos = _rootNode.BestFitChild(oldRoot.Center);
-                Node[] children = new Node[8];
+                int rootPos = _rootPointNode.BestFitChild(oldRoot.Center);
+                PointNode<T>[] children = new PointNode<T>[8];
                 for (int i = 0; i < 8; i++)
                 {
                     if (i == rootPos)
@@ -222,7 +221,7 @@ namespace Octree
                         xDirection = i % 2 == 0 ? -1 : 1;
                         yDirection = i > 3 ? -1 : 1;
                         zDirection = (i < 2 || (i > 3 && i < 6)) ? -1 : 1;
-                        children[i] = new Node(
+                        children[i] = new PointNode<T>(
                             oldRoot.SideLength,
                             _minSize,
                             newCenter + new Vector3(xDirection * half, yDirection * half, zDirection * half));
@@ -230,7 +229,7 @@ namespace Octree
                 }
 
                 // Attach the new children to the new root node
-                _rootNode.SetChildren(children);
+                _rootPointNode.SetChildren(children);
             }
         }
 
@@ -239,7 +238,7 @@ namespace Octree
         /// </summary>
         private void Shrink()
         {
-            _rootNode = _rootNode.ShrinkIfPossible(_initialSize);
+            _rootPointNode = _rootPointNode.ShrinkIfPossible(_initialSize);
         }
     }
 }

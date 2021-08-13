@@ -24,7 +24,7 @@ namespace Octree
     /// 
     /// Dynamic: The octree grows or shrinks as required when objects as added or removed.
     /// It also splits and merges nodes as appropriate. There is no maximum depth.
-    /// Nodes have a constant - <see cref="BoundsOctree{T}.Node.NumObjectsAllowed"/> - which sets the amount of items allowed in a node before it splits.
+    /// Nodes have a constant - <see cref="BoundsNode<T>.NumObjectsAllowed"/> - which sets the amount of items allowed in a node before it splits.
     /// 
     /// Loose: The octree's nodes can be larger than 1/2 their parent's length and width, so they overlap to some extent.
     /// This can alleviate the problem of even tiny objects ending up in large nodes if they're near boundaries.
@@ -37,7 +37,7 @@ namespace Octree
     /// See also: PointOctree, where objects are stored as single points and some code can be simplified
     /// </remarks>
     /// <typeparam name="T">The content of the octree can be anything, since the bounds data is supplied separately.</typeparam>
-    public partial class BoundsOctree<T>
+    public class BoundsOctree<T> : IBoundsOctree<T>
     {
         /// <summary>
         /// The logger
@@ -47,7 +47,7 @@ namespace Octree
         /// <summary>
         /// Root node of the octree
         /// </summary>
-        private Node _rootNode;
+        private BoundsNode<T> _rootBoundsNode;
 
         /// <summary>
         /// Should be a value between 1 and 2. A multiplier for the base size of a node.
@@ -78,7 +78,7 @@ namespace Octree
 		/// <value>The bounding box of the root node.</value>
 		public BoundingBox MaxBounds
         {
-            get { return _rootNode.Bounds; }
+            get { return _rootBoundsNode.Bounds; }
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace Octree
             _initialSize = initialWorldSize;
             _minSize = minNodeSize;
             _looseness = MathExtensions.Clamp(loosenessVal, 1.0f, 2.0f);
-            _rootNode = new Node(_initialSize, _minSize, _looseness, initialWorldPos);
+            _rootBoundsNode = new BoundsNode<T>(_initialSize, _minSize, _looseness, initialWorldPos);
         }
 
         // #### PUBLIC METHODS ####
@@ -115,9 +115,9 @@ namespace Octree
         {
             // Add object or expand the octree until it can be added
             int count = 0; // Safety check against infinite/excessive growth
-            while (!_rootNode.Add(obj, objBounds))
+            while (!_rootBoundsNode.Add(obj, objBounds))
             {
-                Grow(objBounds.Center - _rootNode.Center);
+                Grow(objBounds.Center - _rootBoundsNode.Center);
                 if (++count > 20)
                 {
                     Logger.Error(
@@ -136,7 +136,7 @@ namespace Octree
         /// <returns>True if the object was removed successfully.</returns>
         public bool Remove(T obj)
         {
-            bool removed = _rootNode.Remove(obj);
+            bool removed = _rootBoundsNode.Remove(obj);
 
             // See if we can shrink the octree down now that we've removed the item
             if (removed)
@@ -156,7 +156,7 @@ namespace Octree
         /// <returns>True if the object was removed successfully.</returns>
         public bool Remove(T obj, BoundingBox objBounds)
         {
-            bool removed = _rootNode.Remove(obj, objBounds);
+            bool removed = _rootBoundsNode.Remove(obj, objBounds);
 
             // See if we can shrink the octree down now that we've removed the item
             if (removed)
@@ -175,7 +175,7 @@ namespace Octree
         /// <returns>True if there was a collision.</returns>
         public bool IsColliding(BoundingBox checkBounds)
         {
-            return _rootNode.IsColliding(ref checkBounds);
+            return _rootBoundsNode.IsColliding(ref checkBounds);
         }
 
         /// <summary>
@@ -187,7 +187,7 @@ namespace Octree
         public bool IsColliding(Ray checkRay, float maxDistance)
         {
             var dirFact = Vector3.One / checkRay.Direction;
-            return _rootNode.IsColliding(ref checkRay, ref dirFact, maxDistance);
+            return _rootBoundsNode.IsColliding(ref checkRay, ref dirFact, maxDistance);
         }
 
         /// <summary>
@@ -198,7 +198,7 @@ namespace Octree
         /// <returns>Objects that intersect with the specified bounds.</returns>
         public void GetColliding(List<T> collidingWith, BoundingBox checkBounds)
         {
-            _rootNode.GetColliding(ref checkBounds, collidingWith);
+            _rootBoundsNode.GetColliding(ref checkBounds, collidingWith);
         }
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace Octree
         public void GetColliding(List<T> collidingWith, Ray checkRay, float maxDistance = float.PositiveInfinity)
         {
             var dirFact = Vector3.One / checkRay.Direction;
-            _rootNode.GetColliding(ref checkRay, ref dirFact, collidingWith, maxDistance);
+            _rootBoundsNode.GetColliding(ref checkRay, ref dirFact, collidingWith, maxDistance);
         }
 
         // #### PRIVATE METHODS ####
@@ -225,19 +225,19 @@ namespace Octree
             int xDirection = direction.X >= 0 ? 1 : -1;
             int yDirection = direction.Y >= 0 ? 1 : -1;
             int zDirection = direction.Z >= 0 ? 1 : -1;
-            Node oldRoot = _rootNode;
-            float half = _rootNode.BaseLength / 2;
-            float newLength = _rootNode.BaseLength * 2;
-            Vector3 newCenter = _rootNode.Center + new Vector3(xDirection * half, yDirection * half, zDirection * half);
+            BoundsNode<T> oldRoot = _rootBoundsNode;
+            float half = _rootBoundsNode.BaseLength / 2;
+            float newLength = _rootBoundsNode.BaseLength * 2;
+            Vector3 newCenter = _rootBoundsNode.Center + new Vector3(xDirection * half, yDirection * half, zDirection * half);
 
             // Create a new, bigger octree root node
-            _rootNode = new Node(newLength, _minSize, _looseness, newCenter);
+            _rootBoundsNode = new BoundsNode<T>(newLength, _minSize, _looseness, newCenter);
 
             if (oldRoot.HasAnyObjects())
             {
                 // Create 7 new octree children to go with the old root as children of the new root
-                int rootPos = _rootNode.BestFitChild(oldRoot.Center);
-                Node[] children = new Node[8];
+                int rootPos = _rootBoundsNode.BestFitChild(oldRoot.Center);
+                BoundsNode<T>[] children = new BoundsNode<T>[8];
                 for (int i = 0; i < 8; i++)
                 {
                     if (i == rootPos)
@@ -249,7 +249,7 @@ namespace Octree
                         xDirection = i % 2 == 0 ? -1 : 1;
                         yDirection = i > 3 ? -1 : 1;
                         zDirection = (i < 2 || (i > 3 && i < 6)) ? -1 : 1;
-                        children[i] = new Node(
+                        children[i] = new BoundsNode<T>(
                             oldRoot.BaseLength,
                             _minSize,
                             _looseness,
@@ -258,7 +258,7 @@ namespace Octree
                 }
 
                 // Attach the new children to the new root node
-                _rootNode.SetChildren(children);
+                _rootBoundsNode.SetChildren(children);
             }
         }
 
@@ -267,7 +267,7 @@ namespace Octree
         /// </summary>
         private void Shrink()
         {
-            _rootNode = _rootNode.ShrinkIfPossible(_initialSize);
+            _rootBoundsNode = _rootBoundsNode.ShrinkIfPossible(_initialSize);
         }
     }
 }
